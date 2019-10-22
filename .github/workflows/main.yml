@@ -18,6 +18,7 @@ jobs:
             os: macos-latest
           - target: x86_64-pc-windows-msvc
             os: windows-latest
+            ext: .exe
     steps:
     - uses: actions/checkout@master
     - name: Install Rust (rustup)
@@ -43,7 +44,7 @@ jobs:
       uses: actions/upload-artifact@v1
       with:
         name: cargo-wasi-${{ matrix.target }}
-        path: target/${{ matrix.target }}/release/cargo-wasi*
+        path: target/${{ matrix.target }}/release/cargo-wasi${{ matrix.ext }}
 
   rustfmt:
     name: Rustfmt
