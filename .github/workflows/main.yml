@@ -29,12 +29,21 @@ jobs:
         echo "##[add-path]$HOME/.cargo/bin"
       if: matrix.os == 'macos-latest'
     - run: rustup target add ${{ matrix.target }}
+
+    - name: Configure OSX deployment target
+      run: echo ::set-env name=MACOSX_DEPLOYMENT_TARGET::10.7
+      if: matrix.os == 'macos-latest'
+
+    - name: Configure Windows build flags
+      run: echo ::set-env name=RUSTFLAGS::-Ctarget-feature=+crt-static
+      if: matrix.os == 'windows-latest'
+
     - run: cargo build --release
-    - name: Publish artifact
+    - name: Publish binary build
       uses: actions/upload-artifact@v1
       with:
         name: cargo-wasi-${{ matrix.target }}
-        path: target/${{ matrix.target }}/release/cargo-wasi
+        path: target/${{ matrix.target }}/release/cargo-wasi*
 
   rustfmt:
     name: Rustfmt
