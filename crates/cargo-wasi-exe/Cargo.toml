@@ -1,0 +1,9 @@
+[package]
+name = "cargo-wasi-exe-$ARCH"
+version = "0.1.0"
+authors = ["Alex Crichton <alex@alexcrichton.com>"]
+edition = "2018"
+license = "MIT/Apache-2.0"
+description = """
+Precompiled version of `cargo-wasi` for `$ARCH`
+"""
