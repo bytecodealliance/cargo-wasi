@@ -40,6 +40,8 @@ jobs:
       if: matrix.os == 'windows-latest'
 
     - run: cargo build --release
+    - run: find target
+      shell: bash
     - name: Publish binary build
       uses: actions/upload-artifact@v1
       with:
