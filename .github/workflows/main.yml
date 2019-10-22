@@ -39,7 +39,7 @@ jobs:
       run: echo ::set-env name=RUSTFLAGS::-Ctarget-feature=+crt-static
       if: matrix.os == 'windows-latest'
 
-    - run: cargo build --release
+    - run: cargo build --release --target ${{ matrix.target }}
     - run: find target
       shell: bash
     - name: Publish binary build
