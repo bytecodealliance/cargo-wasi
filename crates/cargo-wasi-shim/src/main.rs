@@ -8,22 +8,26 @@ use std::process::Command;
 cfg_if::cfg_if! {
     if #[cfg(feature = "locally-developed")] {
         const BYTES: Option<&[u8]> = Some(include_bytes!(env!("BYTES_LOC")));
+        fn cargo_wasi_main() { unreachable!() }
     } else if #[cfg(all(target_os = "windows", target_arch = "x86_64"))] {
         const BYTES: Option<&[u8]> = Some(cargo_wasi_exe_x86_64_pc_windows_msvc::BYTES);
+        fn cargo_wasi_main() { unreachable!() }
     } else if #[cfg(all(target_os = "linux", target_arch = "x86_64"))] {
         const BYTES: Option<&[u8]> = Some(cargo_wasi_exe_x86_64_unknown_linux_musl::BYTES);
+        fn cargo_wasi_main() { unreachable!() }
     } else if #[cfg(all(target_os = "macos", target_arch = "x86_64"))] {
         const BYTES: Option<&[u8]> = Some(cargo_wasi_exe_x86_64_apple_darwin::BYTES);
+        fn cargo_wasi_main() { unreachable!() }
     } else {
         const BYTES: Option<&[u8]> = None;
+        fn cargo_wasi_main() { cargo_wasi_src::main() }
     }
 }
 
 fn main() {
     let bytes = match BYTES {
         Some(n) => n,
-        // FIXME(#1) - implement this
-        None => panic!("unsupported fallback platform"),
+        None => return cargo_wasi_main(),
     };
 
     // Figure out where our precompiled file will be written to disk. Currently

@@ -4,7 +4,7 @@ use std::path::PathBuf;
 
 fn main() {
     if !cfg!(feature = "locally-developed") {
-        panic!("local development requires the default feature enabled");
+        return;
     }
 
     let mut out_dir = PathBuf::from(std::env::var_os("OUT_DIR").unwrap());

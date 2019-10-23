@@ -71,6 +71,13 @@ fn main() -> anyhow::Result<()> {
         manifest.push_str(")'.dependencies]\n");
         manifest.push_str(&format!("cargo-wasi-exe-{} = \"={}\"\n", target, version));
     }
+    manifest.push_str("[target.'cfg(not(any(");
+    for (_, cfg) in TARGETS {
+        manifest.push_str(cfg);
+        manifest.push_str(",");
+    }
+    manifest.push_str(")))'.dependencies]\n");
+    manifest.push_str(&format!("cargo-wasi-src = \"={}\"\n", version));
     manifest.push_str("[patch.crates-io]\n");
     for (target, _) in TARGETS {
         manifest.push_str(&format!(
@@ -97,6 +104,27 @@ fn main() -> anyhow::Result<()> {
     }
 
     let do_publish = std::env::var("NO_DRY_RUN").is_ok();
+
+    // Rename the main package to `cargo-wasi-src` and then publish it.
+    if do_publish {
+        println!("Publishing the `cargo-wasi-src` package");
+        let manifest = fs::read_to_string("Cargo.toml").context("failed to read manifest")?;
+        fs::write(
+            "Cargo.toml",
+            manifest.replace("name = \"cargo-wasi\"", "name = \"cargo-wasi-src\""),
+        )?;
+        let status = Command::new("cargo")
+            .arg("publish")
+            .arg("--no-verify")
+            .arg("--allow-dirty")
+            .status()
+            .context("failed to spawn `cargo`")?;
+        fs::write("Cargo.toml", manifest)?;
+        if !status.success() {
+            anyhow::bail!("cargo failed: {}", status);
+        }
+    }
+
     let mut entries = tmp
         .read_dir()?
         .map(|e| e.unwrap().path())
@@ -118,26 +146,6 @@ fn main() -> anyhow::Result<()> {
             std::thread::sleep(std::time::Duration::from_secs(15));
         }
         let status = cmd.status().context("failed to spawn `cargo`")?;
-        if !status.success() {
-            anyhow::bail!("cargo failed: {}", status);
-        }
-    }
-
-    // Rename the main package to `cargo-wasi-src` and then publish it.
-    if do_publish {
-        println!("Publishing the `cargo-wasi-src` package");
-        let manifest = fs::read_to_string("Cargo.toml").context("failed to read manifest")?;
-        fs::write(
-            "Cargo.toml",
-            manifest.replace("name = \"cargo-wasi\"", "name = \"cargo-wasi-src\""),
-        )?;
-        let status = Command::new("cargo")
-            .arg("publish")
-            .arg("--no-verify")
-            .arg("--allow-dirty")
-            .status()
-            .context("failed to spawn `cargo`")?;
-        fs::write("Cargo.toml", manifest)?;
         if !status.success() {
             anyhow::bail!("cargo failed: {}", status);
         }
