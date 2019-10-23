@@ -5,8 +5,8 @@ use std::fs::File;
 use std::io::Read;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
-use wasmparser::{ModuleReader, SectionCode};
 use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
+use wasmparser::{ModuleReader, SectionCode};
 
 mod cache;
 mod utils;
@@ -174,7 +174,7 @@ struct CargoBuild {
     wasm_bindgen: Option<String>,
     // The `*.wasm` artifacts we found during this build, in addition to the
     // profile that they were built with.
-    wasms: Vec<(PathBuf, Profile)>
+    wasms: Vec<(PathBuf, Profile)>,
 }
 
 #[derive(serde::Deserialize, Debug, Clone)]
@@ -212,7 +212,11 @@ fn execute_cargo(cargo: &mut Command) -> Result<CargoBuild> {
     let mut build = CargoBuild::default();
     for line in json.lines() {
         match serde_json::from_str(line) {
-            Ok(Message::CompilerArtifact { filenames, profile, package_id }) => {
+            Ok(Message::CompilerArtifact {
+                filenames,
+                profile,
+                package_id,
+            }) => {
                 let mut parts = package_id.split_whitespace();
                 if parts.next() == Some("wasm-bindgen") {
                     if let Some(version) = parts.next() {
