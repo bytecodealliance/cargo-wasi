@@ -25,7 +25,7 @@ fn rmain() -> anyhow::Result<()> {
         Some("bench") => Subcommand::Bench,
         Some("check") => Subcommand::Check,
         Some("fix") => Subcommand::Fix,
-        Some("version") | Some("-V") => {
+        Some("version") | Some("-V") | Some("--version") => {
             let git_info = match option_env!("GIT_INFO") {
                 Some(s) => format!(" ({})", s),
                 None => String::new(),
@@ -35,6 +35,7 @@ fn rmain() -> anyhow::Result<()> {
         }
         _ => print_help(),
     };
+
     Ok(())
 }
 
