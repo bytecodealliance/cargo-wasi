@@ -1,7 +1,7 @@
-use std::path::PathBuf;
-use std::io::{self, Write};
-use std::process::Command;
 use std::fs::OpenOptions;
+use std::io::{self, Write};
+use std::path::PathBuf;
+use std::process::Command;
 
 // Figure out where our bytes are coming from statically and include it as an
 // optional list of bytes where `None` means "go fetch this from crates.io"
@@ -70,7 +70,11 @@ fn main() {
         opts.mode(0o755);
     }
     if let Err(e) = opts.open(&candidate).and_then(|mut f| f.write_all(bytes)) {
-        eprintln!("failed to write executable file `{}`: {}", candidate.display(), e);
+        eprintln!(
+            "failed to write executable file `{}`: {}",
+            candidate.display(),
+            e
+        );
         std::process::exit(4);
     }
 

@@ -1,6 +1,6 @@
+use std::fs;
 use std::path::PathBuf;
 use std::process::Command;
-use std::fs;
 
 fn me() -> PathBuf {
     let mut me = std::env::current_exe().unwrap();
