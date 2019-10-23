@@ -3,7 +3,6 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 pub struct Cache {
-    all_versions_root: PathBuf,
     root: PathBuf,
 }
 
@@ -20,7 +19,6 @@ impl Cache {
         fs::create_dir_all(&root)
             .with_context(|| format!("failed to create cache directory: {}", root.display()))?;
         Ok(Cache {
-            all_versions_root,
             root,
         })
     }
