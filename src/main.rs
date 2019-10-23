@@ -9,5 +9,5 @@ fn main() {
         }
     }
 
-    println!("Hello, world!");
+    cargo_wasi::main();
 }

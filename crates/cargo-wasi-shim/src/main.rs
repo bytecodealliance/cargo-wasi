@@ -4,7 +4,11 @@ use std::path::PathBuf;
 use std::process::Command;
 
 // Figure out where our bytes are coming from statically and include it as an
-// optional list of bytes where `None` means "go fetch this from crates.io"
+// optional list of bytes where `None` means "run `cargo_wasi_main`"
+//
+// Note that this block really only works with the published version of this
+// crate which is found on crates.io. That means the manifest has been
+// transformed by `weave.rs`
 cfg_if::cfg_if! {
     if #[cfg(feature = "locally-developed")] {
         const BYTES: Option<&[u8]> = Some(include_bytes!(env!("BYTES_LOC")));
