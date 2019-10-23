@@ -1,4 +1,7 @@
 use anyhow::{anyhow, bail, Context, Result};
+use fs2::FileExt;
+use std::fs::{File, OpenOptions};
+use std::path::Path;
 use std::process::{Command, ExitStatus, Output, Stdio};
 
 pub trait CommandExt {
@@ -60,4 +63,21 @@ pub fn check_success(
         message.push_str(&format!("\n\tstderr:\n\t\t{}", stderr));
     }
     bail!("{}", message);
+}
+
+pub fn flock(path: &Path) -> Result<impl Drop> {
+    struct Lock(File);
+    let file = OpenOptions::new()
+        .create(true)
+        .read(true)
+        .write(true)
+        .open(path)?;
+    file.lock_exclusive()?;
+    return Ok(Lock(file));
+
+    impl Drop for Lock {
+        fn drop(&mut self) {
+            drop(self.0.unlock());
+        }
+    }
 }

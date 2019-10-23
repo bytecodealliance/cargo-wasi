@@ -18,9 +18,7 @@ impl Cache {
         let root = all_versions_root.join(env!("CARGO_PKG_VERSION"));
         fs::create_dir_all(&root)
             .with_context(|| format!("failed to create cache directory: {}", root.display()))?;
-        Ok(Cache {
-            root,
-        })
+        Ok(Cache { root })
     }
 
     pub fn root(&self) -> &Path {

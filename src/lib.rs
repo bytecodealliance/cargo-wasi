@@ -159,6 +159,11 @@ fn install_wasi_target(cache: &Cache) -> Result<()> {
         );
     }
 
+    // rustup is not itself synchronized across processes so at least attempt to
+    // synchronize our own calls. This may not work and if it doesn't we tried,
+    // this is largely opportunistic anyway.
+    let _lock = utils::flock(&cache.root().join("rustup-lock"));
+
     Command::new("rustup")
         .arg("target")
         .arg("add")
