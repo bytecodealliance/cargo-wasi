@@ -43,7 +43,7 @@ jobs:
       if: matrix.os == 'windows-latest'
 
     - run: cargo build --release --target ${{ matrix.target }}
-    - run: cargo run -p assemble ${{ matrix.target }} target/${{ matrix.target }}/release/cargo-wasi${{ matrix.ext }}
+    - run: cargo run -p assemble --bin krate ${{ matrix.target }} target/${{ matrix.target }}/release/cargo-wasi${{ matrix.ext }}
 
     - name: Publish binary build
       uses: actions/upload-artifact@v1
@@ -59,3 +59,32 @@ jobs:
     - name: Install Rust
       run: rustup update stable && rustup default stable && rustup component add rustfmt
     - run: cargo fmt -- --check
+
+  publish:
+    name: Publish
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@master
+    - name: Install Rust
+      run: rustup update stable && rustup default stable
+
+    # Download artiacts produced in build step
+    - name: Download OSX
+      uses: actions/download-artifact@v1
+      with:
+        name: cargo-wasi-x86_64-apple-darwin
+    - name: Download Linux
+      uses: actions/download-artifact@v1
+      with:
+        name: cargo-wasi-x86_64-unknown-linux-musl
+    - name: Download Windows
+      uses: actions/download-artifact@v1
+      with:
+        name: cargo-wasi-x86_64-pc-windows-msvc
+
+    - run: |
+        cargo run -p assemble --bin weave \
+          ./cargo-wasi-x86_64-apple-darwin \
+          ./cargo-wasi-x86_64-unknown-linux-gnu \
+          ./cargo-wasi-x86_64-pc-windows-msvc
