@@ -1,4 +1,4 @@
-use std::fs::OpenOptions;
+use std::fs::{self, OpenOptions};
 use std::io::{self, Write};
 use std::path::PathBuf;
 use std::process::Command;
@@ -37,11 +37,29 @@ cfg_if::cfg_if! {
 }
 
 fn main() {
-    let bytes = match BYTES {
-        Some(n) => n,
-        None => return cargo_wasi_main(),
-    };
+    // If we have a precompiled binary, run that, otherwise delegate to
+    // `cargo_wasi_src`
+    match BYTES {
+        Some(n) => run_precompiled(n),
+        None => cargo_wasi_main(),
+    }
+}
 
+/// Run a precompiled binary whose data is `bytes`.
+///
+/// This function will execute the precompiled binary `bytes` by writing it to
+/// disk and then executing it. We want to write `bytes` as the current
+/// executable but this unfortunately isn't an easy operation. The most
+/// cross-platform and robust way of doing this is:
+///
+/// * Write the `bytes` to disk
+/// * Swap the current executable and this temporary file
+/// * Execute the temporary file, now named as this current executable
+/// * Request that the new executable delete our own, perhaps after a few
+///   executions in the future. On Windows on the initial execution it won't be
+///   able to delete the source executable, but on Unix it should always be able
+///   to do so.
+fn run_precompiled(bytes: &[u8]) {
     // Figure out where our precompiled file will be written to disk. Currently
     // we use `.my-name` where `my-name` is the name of this executable
     let mut args = std::env::args_os();
@@ -49,39 +67,13 @@ fn main() {
         Some(name) => name,
         None => std::process::exit(1),
     };
-    let path = PathBuf::from(me);
+    let path = PathBuf::from(me.clone());
     let file_name = match path.file_name().and_then(|f| f.to_str()) {
         Some(s) => format!(".{}", s),
         None => std::process::exit(2),
     };
-    let candidate = path.with_file_name(file_name);
-
-    // Create a `Command` which forwards all the arguments from this binary to
-    // the next, and we'll be trying to execute it below.
-    let mut cmd = Command::new(&candidate);
-    for arg in args {
-        cmd.arg(arg);
-    }
-
-    // On Unix we can rename the target executable on top of ourselves, but on
-    // Windows this never works so don't even try.
-    //
-    // FIXME(#2) should fix this for Windows as well
-    if cfg!(unix) {
-        cmd.env("__CARGO_WASI_RENAME_TO", &path);
-    }
-
-    // Immediately try to execute this binary. If it doesn't exist then we need
-    // to actually write it out to disk, but if it does exist then hey we saved
-    // a few syscalls!
-    match &exec(&mut cmd) {
-        Ok(()) => return,
-        Err(e) if e.kind() == io::ErrorKind::NotFound => {}
-        Err(e) => {
-            eprintln!("failed to spawn child process: {}", e);
-            std::process::exit(3);
-        }
-    }
+    let temporary = path.with_file_name(".cargo-wasi-tmp");
+    let our_destination = path.with_file_name(file_name);
 
     // Write out an executable file to disk containing `bytes` at our determined
     // location. Note that on Unix we need to set the file's mode, but on
@@ -93,16 +85,37 @@ fn main() {
         use std::os::unix::prelude::*;
         opts.mode(0o755);
     }
-    if let Err(e) = opts.open(&candidate).and_then(|mut f| f.write_all(bytes)) {
+    if let Err(e) = opts.open(&temporary).and_then(|mut f| f.write_all(bytes)) {
         eprintln!(
             "failed to write executable file `{}`: {}",
-            candidate.display(),
+            temporary.display(),
             e
         );
-        std::process::exit(4);
+        std::process::exit(3);
     }
 
-    // And finally run `exec` again, but this time we fail on all errors.
+    if let Err(e) = fs::rename(&me, &our_destination)  {
+        eprintln!("failed to move this binary to `{}`: {}", our_destination.display(), e);
+        std::process::exit(4);
+    }
+    if let Err(e) = fs::rename(&temporary, &me)  {
+        // oh dear we are very messed up if this fails. Our executable name
+        // (cargo-wasi) no longer exists, so do a last-ditch effort to try to
+        // put ourselves back.
+        drop(fs::rename(&our_destination, &me));
+        eprintln!("failed to create binary at {:?}: {}", me, e);
+        std::process::exit(5);
+    }
+
+    // Now re-exec `&me` since it's a different binary. If we're on unix then
+    // we definitely should be able to delete our shim file.
+    let mut cmd = Command::new(&me);
+    for arg in args {
+        cmd.arg(arg);
+    }
+    if cfg!(unix) {
+        cmd.env("__CARGO_WASI_SELF_DELETE_FOR_SURE", "1");
+    }
     match exec(&mut cmd) {
         Ok(()) => return,
         Err(e) => {
