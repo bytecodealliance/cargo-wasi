@@ -26,12 +26,11 @@ fn smoke() {
     println!("{:#?}", output);
     assert!(output.status.success());
     let after = fs::read(&path).unwrap();
-    if after == before {
-        assert!(path.with_file_name(".cargo-wasi").exists());
-        assert!(cfg!(windows));
+    assert!(after != before);
+    if cfg!(windows) {
+        assert!(path.with_file_name(".cargo-wasi.exe").exists());
     } else {
         assert!(!path.with_file_name(".cargo-wasi").exists());
-        assert!(!cfg!(windows));
     }
 }
 
@@ -52,4 +51,6 @@ fn run_twice() {
     let output = Command::new(&path).output().unwrap();
     println!("{:#?}", output);
     assert!(output.status.success());
+    assert!(!path.with_file_name(".cargo-wasi").exists());
+    assert!(!path.with_file_name(".cargo-wasi.exe").exists());
 }
