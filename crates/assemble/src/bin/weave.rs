@@ -26,35 +26,35 @@ fn main() -> anyhow::Result<()> {
     println!("Copying the shim into `tmp`...");
     cp_r("crates/cargo-wasi-shim".as_ref(), &tmp.join("shim"))?;
 
-    let mut version = String::new();
-    for (target, _) in TARGETS {
-        let dir = PathBuf::from(format!("cargo-wasi-{}", target));
-        let krate = dir
-            .read_dir()
-            .context(format!("failed to read {:?}", dir))?
-            .filter_map(|e| e.ok())
-            .map(|e| e.path())
-            .find(|e| e.extension().and_then(|s| s.to_str()) == Some("crate"))
-            .expect("failed to find `*.crate`");
-        println!("extracting {:?}", krate);
-        let status = Command::new("tar")
-            .arg("xf")
-            .arg(krate.canonicalize().context("failed to canonicalize")?)
-            .current_dir(&tmp)
-            .status()
-            .context("failed to spawn `tar`")?;
-        if !status.success() {
-            anyhow::bail!("tar extraction failed: {}", status);
-        }
+    let version = toml::from_str::<toml::Value>(&fs::read_to_string("Cargo.toml").unwrap())
+        .unwrap()["package"]["version"]
+        .as_str()
+        .unwrap()
+        .to_string();
 
-        let filename = krate.file_stem().unwrap().to_str().unwrap();
-        version = filename[filename
-            .as_bytes()
-            .iter()
-            .rposition(|b| *b == b'-')
-            .unwrap()
-            + 1..]
-            .to_string();
+    let krate_files_here = std::env::var("SKIP_EXTRACT").is_err();
+
+    if krate_files_here {
+        for (target, _) in TARGETS {
+            let dir = PathBuf::from(format!("cargo-wasi-{}", target));
+            let krate = dir
+                .read_dir()
+                .context(format!("failed to read {:?}", dir))?
+                .filter_map(|e| e.ok())
+                .map(|e| e.path())
+                .find(|e| e.extension().and_then(|s| s.to_str()) == Some("crate"))
+                .expect("failed to find `*.crate`");
+            println!("extracting {:?}", krate);
+            let status = Command::new("tar")
+                .arg("xf")
+                .arg(krate.canonicalize().context("failed to canonicalize")?)
+                .current_dir(&tmp)
+                .status()
+                .context("failed to spawn `tar`")?;
+            if !status.success() {
+                anyhow::bail!("tar extraction failed: {}", status);
+            }
+        }
     }
 
     println!("Rewriting shim manifest with `[patch]`");
@@ -82,16 +82,18 @@ fn main() -> anyhow::Result<()> {
     println!("\t{}", manifest.replace("\n", "\n\t"));
     fs::write(&manifest_path, manifest).context("failed to write manifest")?;
 
-    println!("Building the shim to make sure it works");
-    let status = Command::new("cargo")
-        .arg("build")
-        .env("CARGO_TARGET_DIR", "target")
-        .arg("--manifest-path")
-        .arg(&manifest_path)
-        .status()
-        .context("failed to spawn `cargo`")?;
-    if !status.success() {
-        anyhow::bail!("cargo failed: {}", status);
+    if krate_files_here {
+        println!("Building the shim to make sure it works");
+        let status = Command::new("cargo")
+            .arg("build")
+            .env("CARGO_TARGET_DIR", "target")
+            .arg("--manifest-path")
+            .arg(&manifest_path)
+            .status()
+            .context("failed to spawn `cargo`")?;
+        if !status.success() {
+            anyhow::bail!("cargo failed: {}", status);
+        }
     }
 
     let mut entries = tmp
@@ -112,7 +114,7 @@ fn main() -> anyhow::Result<()> {
             }
         } else {
             // give crates.io a chance to propagate the index change
-            std::thread::sleep(std::time::Duration::from_secs(5));
+            std::thread::sleep(std::time::Duration::from_secs(15));
         }
         let status = cmd.status().context("failed to spawn `cargo`")?;
         if !status.success() {
