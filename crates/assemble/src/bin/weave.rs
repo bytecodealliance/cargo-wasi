@@ -68,7 +68,7 @@ fn main() -> anyhow::Result<()> {
         manifest.push_str("[target.'cfg(");
         manifest.push_str(cfg);
         manifest.push_str("').dependencies]\n");
-        manifest.push_str(&format!("cargo-wasi-exe-{} = \"={}\"", target, version));
+        manifest.push_str(&format!("cargo-wasi-exe-{} = \"={}\"\n", target, version));
     }
     manifest.push_str("[patch.crates-io]\n");
     for (target, _) in TARGETS {
