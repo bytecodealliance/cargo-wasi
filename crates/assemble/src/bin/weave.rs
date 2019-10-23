@@ -15,7 +15,8 @@ fn main() -> anyhow::Result<()> {
     for dir in std::env::args().skip(1) {
         let dir = Path::new(&dir);
         let krate = dir
-            .read_dir()?
+            .read_dir()
+            .context(format!("failed to read {:?}", dir))?
             .filter_map(|e| e.ok())
             .map(|e| e.path())
             .find(|e| e.extension().and_then(|s| s.to_str()) == Some("crate"))
