@@ -21,3 +21,6 @@ members = [
   'crates/cargo-wasi-shim',
 ]
 exclude = ['tmp']
+
+[dependencies]
+anyhow = "1.0"
