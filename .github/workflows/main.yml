@@ -43,12 +43,13 @@ jobs:
       if: matrix.os == 'windows-latest'
 
     - run: cargo build --release --target ${{ matrix.target }}
+    - run: cargo run -p assemble ${{ matrix.target }} target/${{ matrix.target }}/release/cargo-wasi${{ matrix.ext }}
 
     - name: Publish binary build
       uses: actions/upload-artifact@v1
       with:
         name: cargo-wasi-${{ matrix.target }}
-        path: target/${{ matrix.target }}/release/cargo-wasi${{ matrix.ext }}
+        path: tmp
 
   rustfmt:
     name: Rustfmt
