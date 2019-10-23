@@ -85,9 +85,16 @@ fn main() -> anyhow::Result<()> {
             target, version
         ));
     }
+    manifest.push_str("cargo-wasi-src = { path = '../..' }\n");
     println!("========= NEW MANIFEST ===============");
     println!("\t{}", manifest.replace("\n", "\n\t"));
     fs::write(&manifest_path, manifest).context("failed to write manifest")?;
+
+    let top_manifest = fs::read_to_string("Cargo.toml").context("failed to read manifest")?;
+    fs::write(
+        "Cargo.toml",
+        top_manifest.replace("name = \"cargo-wasi\"", "name = \"cargo-wasi-src\""),
+    )?;
 
     if krate_files_here {
         println!("Building the shim to make sure it works");
@@ -108,18 +115,12 @@ fn main() -> anyhow::Result<()> {
     // Rename the main package to `cargo-wasi-src` and then publish it.
     if do_publish {
         println!("Publishing the `cargo-wasi-src` package");
-        let manifest = fs::read_to_string("Cargo.toml").context("failed to read manifest")?;
-        fs::write(
-            "Cargo.toml",
-            manifest.replace("name = \"cargo-wasi\"", "name = \"cargo-wasi-src\""),
-        )?;
         let status = Command::new("cargo")
             .arg("publish")
             .arg("--no-verify")
             .arg("--allow-dirty")
             .status()
             .context("failed to spawn `cargo`")?;
-        fs::write("Cargo.toml", manifest)?;
         if !status.success() {
             anyhow::bail!("cargo failed: {}", status);
         }
