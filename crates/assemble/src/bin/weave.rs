@@ -36,7 +36,9 @@ fn main() -> anyhow::Result<()> {
 
     println!("Rewriting shim manifest with `[patch]`");
     let manifest_path = tmp.join("shim/Cargo.toml");
-    let mut manifest = fs::read_to_string(&manifest_path).context("failed to read manifest")?;
+    let mut manifest = fs::read_to_string(&manifest_path)
+        .context("failed to read manifest")?
+        .replace("cargo-wasi-shim", "cargo-wasi");
     manifest.push_str("\n");
     manifest.push_str("[patch.crates-io]\n");
     for name in overrides.iter() {
