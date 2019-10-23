@@ -5,6 +5,7 @@ use std::fs::File;
 use std::io::Read;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
+use wasmparser::{ModuleReader, SectionCode};
 use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
 
 mod cache;
@@ -97,8 +98,8 @@ fn rmain() -> Result<()> {
     for arg in args {
         cargo.arg(arg);
     }
-    let wasms = execute_cargo(&mut cargo)?;
-    println!("{:?}", wasms);
+    let build = execute_cargo(&mut cargo)?;
+    remove_debuginfo(&build)?;
 
     Ok(())
 }
@@ -167,11 +168,32 @@ fn install_wasi_target(cache: &Cache) -> Result<()> {
     Ok(())
 }
 
-fn execute_cargo(cargo: &mut Command) -> Result<Vec<PathBuf>> {
+#[derive(Default, Debug)]
+struct CargoBuild {
+    // The version of `wasm-bindgen` used in this build, if any.
+    wasm_bindgen: Option<String>,
+    // The `*.wasm` artifacts we found during this build, in addition to the
+    // profile that they were built with.
+    wasms: Vec<(PathBuf, Profile)>
+}
+
+#[derive(serde::Deserialize, Debug, Clone)]
+struct Profile {
+    opt_level: String,
+    debuginfo: Option<u32>,
+    test: bool,
+}
+
+fn execute_cargo(cargo: &mut Command) -> Result<CargoBuild> {
     #[derive(serde::Deserialize)]
     #[serde(tag = "reason", rename_all = "kebab-case")]
     enum Message {
-        CompilerArtifact { filenames: Vec<String> },
+        CompilerArtifact {
+            filenames: Vec<String>,
+            package_id: String,
+            profile: Profile,
+        },
+        BuildScriptExecuted,
     }
     let mut process = cargo
         .stdout(Stdio::piped())
@@ -187,20 +209,70 @@ fn execute_cargo(cargo: &mut Command) -> Result<Vec<PathBuf>> {
     let status = process.wait().context("failed to wait on `cargo`")?;
     utils::check_success(&cargo, &status, &[], &[])?;
 
-    let mut wasms = Vec::new();
+    let mut build = CargoBuild::default();
     for line in json.lines() {
         match serde_json::from_str(line) {
-            Ok(Message::CompilerArtifact { filenames }) => {
+            Ok(Message::CompilerArtifact { filenames, profile, package_id }) => {
+                let mut parts = package_id.split_whitespace();
+                if parts.next() == Some("wasm-bindgen") {
+                    if let Some(version) = parts.next() {
+                        build.wasm_bindgen = Some(version.to_string());
+                    }
+                }
                 for file in filenames {
                     let file = PathBuf::from(file);
                     if file.extension().and_then(|s| s.to_str()) == Some("wasm") {
-                        wasms.push(file);
+                        build.wasms.push((file, profile.clone()));
                     }
                 }
             }
-            _ => {}
+            Ok(Message::BuildScriptExecuted) => {}
+            Err(e) => bail!("failed to parse {}: {}", line, e),
         }
     }
 
-    Ok(wasms)
+    Ok(build)
+}
+
+/// Removes any `.debug_*` sections in wasm files produced during a build that
+/// shouldn't have them.
+///
+/// If debuginfo is disabled during a build then the standard library's
+/// debuginfo will still be present in the final executable. If debuginfo is
+/// disabled though this is generally wasted space, so let's remove that
+/// debuginfo.
+fn remove_debuginfo(build: &CargoBuild) -> Result<()> {
+    for (wasm, profile) in build.wasms.iter() {
+        // If the `debuginfo` is configured then we leave in the debuginfo
+        // sections.
+        if profile.debuginfo.is_some() {
+            continue;
+        }
+        remove_debuginfo(&wasm)
+            .with_context(|| format!("failed to remove debuginfo from `{}`", wasm.display()))?;
+    }
+    return Ok(());
+
+    fn remove_debuginfo(path: &Path) -> Result<()> {
+        let mut ranges = Vec::new();
+        let mut bytes = std::fs::read(path)?;
+        let mut reader = ModuleReader::new(&bytes)?;
+        while !reader.eof() {
+            let start = reader.current_position();
+            let section = reader.read()?;
+            let name = match section.code {
+                SectionCode::Custom { name, .. } => name,
+                _ => continue,
+            };
+            if !name.starts_with(".debug") {
+                continue;
+            }
+            ranges.push((start, section.range().end));
+        }
+        for (start, end) in ranges.into_iter().rev() {
+            bytes.drain(start..end);
+        }
+        std::fs::write(path, bytes)?;
+        Ok(())
+    }
 }
