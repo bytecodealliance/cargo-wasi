@@ -7,7 +7,7 @@ license = "MIT/Apache-2.0"
 repository = "https://github.com/alexcrichton/cargo-wasi"
 readme = "../../README.md"
 description = """
-TODO description
+Subcommand for Cargo to easily build code for `wasm32-wasi`
 """
 
 [dependencies]
