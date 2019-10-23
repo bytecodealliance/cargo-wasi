@@ -55,9 +55,12 @@ jobs:
       run: echo ::set-env name=RUSTFLAGS::-Ctarget-feature=+crt-static
       if: matrix.os == 'windows-latest'
 
+    # Build our actual binary
     - run: cargo build --release --target ${{ matrix.target }}
-    - run: cargo run -p assemble --bin krate ${{ matrix.target }} target/${{ matrix.target }}/release/cargo-wasi${{ matrix.ext }}
 
+    # Plop the binary plus a `*.crate` file for the corresponding
+    # target-specific package in `tmp` and upload the artifact.
+    - run: cargo run -p assemble --bin krate ${{ matrix.target }} target/${{ matrix.target }}/release/cargo-wasi${{ matrix.ext }}
     - name: Publish binary build
       uses: actions/upload-artifact@v1
       with:
@@ -96,10 +99,14 @@ jobs:
       with:
         name: cargo-wasi-x86_64-pc-windows-msvc
 
+    # On tags we actually publish crates, so configure env vars if this is a git
+    # tag.
     - name: Configure release env vars
       run: |
         echo ::set-env name=NO_DRY_RUN::1
         echo ::set-env name=CARGO_REGISTRY_TOKEN::${{ secrets.CARGO_REGISTRY_TOKEN }}
       if: github.event_name == 'push' && startsWith(github.event.ref, 'refs/tags')
 
+    # Take all the input `*.crate` files and run various checks. Additionally
+    # assemble the "real" `cargo-wasi` crate which is published on crates.io.
     - run: cargo run -p assemble --bin weave
