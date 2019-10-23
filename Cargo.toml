@@ -10,6 +10,11 @@ description = """
 Subcommand for Cargo to easily build code for `wasm32-wasi`
 """
 
+# This package will be renamed on crates.io to `cargo-wasi-src`, so make sure
+# the binary is always called `cargo-wasi`.
+[[bin]]
+name = "cargo-wasi"
+
 [workspace]
 members = [
   'crates/assemble',
