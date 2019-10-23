@@ -52,7 +52,8 @@ fn main() -> anyhow::Result<()> {
             .as_bytes()
             .iter()
             .rposition(|b| *b == b'-')
-            .unwrap()..]
+            .unwrap()
+            + 1..]
             .to_string();
     }
 
