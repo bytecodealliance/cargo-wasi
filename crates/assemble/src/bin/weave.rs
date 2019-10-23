@@ -23,7 +23,7 @@ fn main() -> anyhow::Result<()> {
         println!("extracting {:?}", krate);
         let status = Command::new("tar")
             .arg("xf")
-            .arg(krate.canonicalize()?)
+            .arg(krate.canonicalize().context("failed to canonicalize")?)
             .current_dir(&tmp)
             .status()
             .context("failed to spawn `tar`")?;
