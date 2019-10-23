@@ -40,7 +40,8 @@ fn rmain() -> anyhow::Result<()> {
 }
 
 fn print_help() -> ! {
-    println!("\
+    println!(
+        "\
 cargo-wasi
 Compile and run a Rust crate for the wasm32-wasi target
 
@@ -56,6 +57,7 @@ All options accepted are the same as that of the corresponding `cargo`
 subcommands. You can run `cargo wasi build -h` for more information to learn
 about flags that can be passed to `cargo wasi build`, which mirrors the
 `cargo build` command.
-");
+"
+    );
     std::process::exit(0);
 }

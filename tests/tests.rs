@@ -1,6 +1,6 @@
-use std::process::Command;
 use assert_cmd::prelude::*;
 use predicates::prelude::*;
+use std::process::Command;
 
 fn cargo_wasi(args: &str) -> Command {
     let mut me = std::env::current_exe().unwrap();
@@ -20,9 +20,7 @@ fn cargo_wasi(args: &str) -> Command {
     path.insert(0, me);
     cmd.env("PATH", std::env::join_paths(&path).unwrap());
 
-
     return cmd;
-
 }
 
 #[test]
@@ -32,13 +30,16 @@ fn help() {
 
 #[test]
 fn version() {
-    cargo_wasi("-V").assert()
+    cargo_wasi("-V")
+        .assert()
         .stdout(predicate::str::contains(env!("CARGO_PKG_VERSION")))
         .success();
-    cargo_wasi("--version").assert()
+    cargo_wasi("--version")
+        .assert()
         .stdout(predicate::str::contains(env!("CARGO_PKG_VERSION")))
         .success();
-    cargo_wasi("version").assert()
+    cargo_wasi("version")
+        .assert()
         .stdout(predicate::str::contains(env!("CARGO_PKG_VERSION")))
         .success();
 }
