@@ -13,7 +13,8 @@ fn main() {
     // self-installer won't be currently executing so we'll be able to delete
     // it. As a result we just always try deleting it and if it fails
     // we only consider that fatal on Unix.
-    let try_self_delete = cfg!(windows) || std::env::var_os("__CARGO_WASI_SELF_DELETE_FOR_SURE").is_some();
+    let try_self_delete =
+        cfg!(windows) || std::env::var_os("__CARGO_WASI_SELF_DELETE_FOR_SURE").is_some();
     if try_self_delete {
         let me = match std::env::current_exe() {
             Ok(path) => path,

@@ -94,11 +94,15 @@ fn run_precompiled(bytes: &[u8]) {
         std::process::exit(3);
     }
 
-    if let Err(e) = fs::rename(&me, &our_destination)  {
-        eprintln!("failed to move this binary to `{}`: {}", our_destination.display(), e);
+    if let Err(e) = fs::rename(&me, &our_destination) {
+        eprintln!(
+            "failed to move this binary to `{}`: {}",
+            our_destination.display(),
+            e
+        );
         std::process::exit(4);
     }
-    if let Err(e) = fs::rename(&temporary, &me)  {
+    if let Err(e) = fs::rename(&temporary, &me) {
         // oh dear we are very messed up if this fails. Our executable name
         // (cargo-wasi) no longer exists, so do a last-ditch effort to try to
         // put ourselves back.
