@@ -9,6 +9,6 @@ repository = "https://github.com/alexcrichton/cargo-wasi"
 [workspace]
 members = [
   'crates/assemble',
-  'crates/cargo-wasm-shim',
+  'crates/cargo-wasi-shim',
 ]
 exclude = ['tmp']

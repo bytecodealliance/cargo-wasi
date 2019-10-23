@@ -16,7 +16,9 @@ fn main() {
     let loc = out_dir.join("cargo-wasi").with_extension(std::env::consts::EXE_EXTENSION);
 
     if !loc.exists() {
-        panic!("the `cargo-wasi` binary needs to be built before this crate");
+        eprintln!("the `cargo-wasi` binary needs to be built before this crate");
+        eprintln!("{:?} does not exist", loc);
+        std::process::exit(1);
     }
 
     println!("cargo:rustc-env=BYTES_LOC={}", loc.to_str().unwrap());

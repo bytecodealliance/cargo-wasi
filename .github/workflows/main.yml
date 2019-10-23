@@ -2,6 +2,18 @@ name: CI
 on: [push, pull_request]
 
 jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@master
+    - name: Install Rust (rustup)
+      run: rustup update stable --no-self-update && rustup default stable
+
+    - run: cargo test -p cargo-wasi
+    - run: cargo test -p cargo-wasi-shim
+    - run: cargo build -p assemble
+
   build:
     name: Build
     runs-on: ${{ matrix.os }}
