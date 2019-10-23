@@ -8,7 +8,15 @@ use std::process::Command;
 //
 // Note that this block really only works with the published version of this
 // crate which is found on crates.io. That means the manifest has been
-// transformed by `weave.rs`
+// transformed by `weave.rs` and notably has a bunch of injected precompiled
+// dependencies. If we do not have a precompiled dependency then this crate will
+// fall back to depending on `cargo-wasi-src` which is the actual `cargo-wasi`
+// crate itself, so our fallback simply runs the main function there.
+//
+// This is sort of a "glorious hack" to severely reduce the compile times of
+// this crate (and compile requirements) if you're installing on a platform that
+// we have precompiled binaries for. Only if you're installing for a platform
+// that doesn't have precompiled binaries do things go awry.
 cfg_if::cfg_if! {
     if #[cfg(feature = "locally-developed")] {
         const BYTES: Option<&[u8]> = Some(include_bytes!(env!("BYTES_LOC")));
