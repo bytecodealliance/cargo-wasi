@@ -74,7 +74,20 @@ fn rmain() -> Result<()> {
         Subcommand::Check => {
             cargo.arg("check");
         }
-        s => panic!("unimplemented subcommand {:?}", s),
+        Subcommand::Fix => {
+            cargo.arg("fix");
+        }
+        Subcommand::Test => {
+            cargo.arg("test");
+            cargo.arg("--no-run");
+        }
+        Subcommand::Bench => {
+            cargo.arg("bench");
+            cargo.arg("--no-run");
+        }
+        Subcommand::Run => {
+            cargo.arg("build");
+        }
     }
 
     // TODO: figure out when these flags are already passed to `cargo` and skip
