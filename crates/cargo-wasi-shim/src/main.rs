@@ -3,6 +3,8 @@ use std::io::{self, Write};
 use std::process::Command;
 use std::fs::OpenOptions;
 
+// Figure out where our bytes are coming from statically and include it as an
+// optional list of bytes where `None` means "go fetch this from crates.io"
 cfg_if::cfg_if! {
     if #[cfg(feature = "locally-developed")] {
         const BYTES: Option<&[u8]> = Some(include_bytes!(env!("BYTES_LOC")));
@@ -20,14 +22,17 @@ cfg_if::cfg_if! {
 fn main() {
     let bytes = match BYTES {
         Some(n) => n,
+        // FIXME(#1) - implement this
         None => panic!("unsupported fallback platform"),
     };
+
+    // Figure out where our precompiled file will be written to disk. Currently
+    // we use `.my-name` where `my-name` is the name of this executable
     let mut args = std::env::args_os();
     let me = match args.next() {
         Some(name) => name,
         None => std::process::exit(1),
     };
-
     let path = PathBuf::from(me);
     let file_name = match path.file_name().and_then(|f| f.to_str()) {
         Some(s) => format!(".{}", s),
@@ -35,10 +40,16 @@ fn main() {
     };
     let candidate = path.with_file_name(file_name);
 
+    // Create a `Command` which forwards all the arguments from this binary to
+    // the next, and we'll be trying to execute it below.
     let mut cmd = Command::new(&candidate);
     for arg in args {
         cmd.arg(arg);
     }
+
+    // Immediately try to execute this binary. If it doesn't exist then we need
+    // to actually write it out to disk, but if it does exist then hey we saved
+    // a few syscalls!
     match &exec(&mut cmd) {
         Ok(()) => return,
         Err(e) if e.kind() == io::ErrorKind::NotFound => {}
@@ -48,6 +59,9 @@ fn main() {
         }
     }
 
+    // Write out an executable file to disk containing `bytes` at our determined
+    // location. Note that on Unix we need to set the file's mode, but on
+    // Windows everything is inherently executable.
     let mut opts = OpenOptions::new();
     opts.create(true).write(true);
     #[cfg(unix)]
@@ -59,6 +73,8 @@ fn main() {
         eprintln!("failed to write executable file `{}`: {}", candidate.display(), e);
         std::process::exit(4);
     }
+
+    // And finally run `exec` again, but this time we fail on all errors.
     match exec(&mut cmd) {
         Ok(()) => return,
         Err(e) => {
