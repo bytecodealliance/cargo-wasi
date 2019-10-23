@@ -12,6 +12,7 @@ jobs:
     - uses: actions/checkout@master
     - name: Install Rust (rustup)
       run: rustup update stable --no-self-update && rustup default stable
+      shell: bash
       if: matrix.os != 'macos-latest'
     - name: Install Rust (macos)
       run: |
@@ -45,6 +46,7 @@ jobs:
     - uses: actions/checkout@master
     - name: Install Rust (rustup)
       run: rustup update stable --no-self-update && rustup default stable
+      shell: bash
       if: matrix.os != 'macos-latest'
     - name: Install Rust (macos)
       run: |
