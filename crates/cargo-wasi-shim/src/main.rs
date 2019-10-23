@@ -46,6 +46,7 @@ fn main() {
     for arg in args {
         cmd.arg(arg);
     }
+    cmd.env("__CARGO_WASI_RENAME_TO", &path);
 
     // Immediately try to execute this binary. If it doesn't exist then we need
     // to actually write it out to disk, but if it does exist then hey we saved

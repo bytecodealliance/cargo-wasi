@@ -21,10 +21,18 @@ fn case() -> (tempfile::TempDir, PathBuf) {
 #[test]
 fn smoke() {
     let (_td, path) = case();
+    let before = fs::read(&path).unwrap();
     let output = Command::new(&path).output().unwrap();
     println!("{:#?}", output);
     assert!(output.status.success());
-    assert!(path.with_file_name(".cargo-wasi").exists());
+    let after = fs::read(&path).unwrap();
+    if after == before {
+        assert!(path.with_file_name(".cargo-wasi").exists());
+        assert!(cfg!(windows));
+    } else {
+        assert!(!path.with_file_name(".cargo-wasi").exists());
+        assert!(!cfg!(windows));
+    }
 }
 
 #[test]
