@@ -13,7 +13,8 @@ fn me() -> PathBuf {
 
 fn case() -> (tempfile::TempDir, PathBuf) {
     let td = tempfile::TempDir::new().unwrap();
-    let path = td.path().join("cargo-wasi");
+    let mut path = td.path().join("cargo-wasi");
+    path.set_extension(std::env::consts::EXE_EXTENSION);
     fs::copy(me(), &path).unwrap();
     (td, path)
 }
