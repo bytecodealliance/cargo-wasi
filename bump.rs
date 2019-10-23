@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
 
-const CRATES_TO_BUMP: &[&str] = &["cargo-wasi"];
+const CRATES_TO_BUMP: &[&str] = &["cargo-wasi", "cargo-wasi-shim"];
 
 const CRATES_TO_AVOID_BUMP: &[&str] = &["assemble"];
 
