@@ -1,7 +1,22 @@
 use anyhow::Context;
 use std::fs;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::process::Command;
+
+const TARGETS: &[(&str, &str)] = &[
+    (
+        "x86_64-apple-darwin",
+        r#"all(target_arch = "x86_64", target_os = "macos")"#,
+    ),
+    (
+        "x86_64-pc-windows-msvc",
+        r#"all(target_arch = "x86_64", target_os = "windows")"#,
+    ),
+    (
+        "x86_64-unknown-linux-musl",
+        r#"all(target_arch = "x86_64", target_os = "linux")"#,
+    ),
+];
 
 fn main() -> anyhow::Result<()> {
     let tmp = Path::new("tmp");
@@ -11,9 +26,9 @@ fn main() -> anyhow::Result<()> {
     println!("Copying the shim into `tmp`...");
     cp_r("crates/cargo-wasi-shim".as_ref(), &tmp.join("shim"))?;
 
-    let mut overrides = Vec::new();
-    for dir in std::env::args().skip(1) {
-        let dir = Path::new(&dir);
+    let mut version = String::new();
+    for (target, _) in TARGETS {
+        let dir = PathBuf::from(format!("cargo-wasi-{}", target));
         let krate = dir
             .read_dir()
             .context(format!("failed to read {:?}", dir))?
@@ -31,20 +46,39 @@ fn main() -> anyhow::Result<()> {
         if !status.success() {
             anyhow::bail!("tar extraction failed: {}", status);
         }
-        overrides.push(krate.file_stem().unwrap().to_str().unwrap().to_string());
+
+        let filename = krate.file_stem().unwrap().to_str().unwrap();
+        version = filename[filename
+            .as_bytes()
+            .iter()
+            .rposition(|b| *b == b'-')
+            .unwrap()..]
+            .to_string();
     }
 
     println!("Rewriting shim manifest with `[patch]`");
     let manifest_path = tmp.join("shim/Cargo.toml");
+    fs::remove_file(tmp.join("shim/build.rs")).context("failed to remove build script")?;
     let mut manifest = fs::read_to_string(&manifest_path)
         .context("failed to read manifest")?
         .replace("cargo-wasi-shim", "cargo-wasi");
+    manifest.truncate(manifest.find("[features]").unwrap());
     manifest.push_str("\n");
-    manifest.push_str("[patch.crates-io]\n");
-    for name in overrides.iter() {
-        let krate = &name[..name.as_bytes().iter().rposition(|b| *b == b'-').unwrap()];
-        manifest.push_str(&format!("{} = {{ path = '../{}' }}\n", krate, name));
+    for (target, cfg) in TARGETS {
+        manifest.push_str("[target.'cfg(");
+        manifest.push_str(cfg);
+        manifest.push_str("').dependencies]\n");
+        manifest.push_str(&format!("cargo-wasi-exe-{} = \"={}\"", target, version));
     }
+    manifest.push_str("[patch.crates-io]\n");
+    for (target, _) in TARGETS {
+        manifest.push_str(&format!(
+            "cargo-wasi-exe-{} = {{ path = '../cargo-wasi-exe-{0}-{}' }}\n",
+            target, version
+        ));
+    }
+    println!("========= NEW MANIFEST ===============");
+    println!("\t{}", manifest.replace("\n", "\n\t"));
     fs::write(&manifest_path, manifest).context("failed to write manifest")?;
 
     println!("Building the shim to make sure it works");

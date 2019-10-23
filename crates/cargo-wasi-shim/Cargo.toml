@@ -10,25 +10,12 @@ description = """
 TODO description
 """
 
-[workspace]
-
 [dependencies]
 cfg-if = "0.1.10"
 
-[target.'cfg(all(target_arch = "x86_64", target_os = "windows"))'.dependencies]
-cargo-wasi-exe-x86_64-pc-windows-msvc = { version = "=0.1.1", optional = true }
-
-[target.'cfg(all(target_arch = "x86_64", target_os = "macos"))'.dependencies]
-cargo-wasi-exe-x86_64-apple-darwin = { version = "=0.1.1", optional = true }
-
-[target.'cfg(all(target_arch = "x86_64", target_os = "linux"))'.dependencies]
-cargo-wasi-exe-x86_64-unknown-linux-musl = { version = "=0.1.1", optional = true }
-
-
 [features]
-default = ['prebuilt']
-prebuilt = [
-  'cargo-wasi-exe-x86_64-pc-windows-msvc',
-  'cargo-wasi-exe-x86_64-apple-darwin',
-  'cargo-wasi-exe-x86_64-unknown-linux-musl',
-]
+default = ['locally-developed']
+locally-developed = []
+# NB: the `[features]` section must be last in this manifest to agree with
+# `weave.rs` as part of the assemble crate. The features section here is removed
+# when publishing to crates.io

@@ -89,8 +89,4 @@ jobs:
         echo ::set-env name=CARGO_REGISTRY_TOKEN::${{ secrets.CARGO_REGISTRY_TOKEN }}
       if: github.event_name == 'push' && startsWith(github.event.ref, 'refs/tags')
 
-    - run: |
-        cargo run -p assemble --bin weave \
-          ./cargo-wasi-x86_64-apple-darwin \
-          ./cargo-wasi-x86_64-unknown-linux-musl \
-          ./cargo-wasi-x86_64-pc-windows-msvc
+    - run: cargo run -p assemble --bin weave

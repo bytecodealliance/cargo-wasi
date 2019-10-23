@@ -1,5 +1,7 @@
 cfg_if::cfg_if! {
-    if #[cfg(all(target_os = "windows", target_arch = "x86_64"))] {
+    if #[cfg(feature = "locally-developed")] {
+        const BYTES: Option<&[u8]> = Some(include_bytes!(env!("BYTES_LOC")));
+    } else if #[cfg(all(target_os = "windows", target_arch = "x86_64"))] {
         const BYTES: Option<&[u8]> = Some(cargo_wasi_exe_x86_64_pc_windows_msvc::BYTES);
     } else if #[cfg(all(target_os = "linux", target_arch = "x86_64"))] {
         const BYTES: Option<&[u8]> = Some(cargo_wasi_exe_x86_64_unknown_linux_musl::BYTES);
@@ -9,6 +11,7 @@ cfg_if::cfg_if! {
         const BYTES: Option<&[u8]> = None;
     }
 }
+
 fn main() {
     match BYTES {
         Some(n) => println!("got {} bytes", n.len()),
