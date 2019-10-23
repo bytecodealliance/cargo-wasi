@@ -13,7 +13,9 @@ fn main() {
         assert!(out_dir.pop(), "reached the root dir");
     }
 
-    let loc = out_dir.join("cargo-wasi").with_extension(std::env::consts::EXE_EXTENSION);
+    let loc = out_dir
+        .join("cargo-wasi")
+        .with_extension(std::env::consts::EXE_EXTENSION);
 
     if !loc.exists() {
         eprintln!("the `cargo-wasi` binary needs to be built before this crate");
