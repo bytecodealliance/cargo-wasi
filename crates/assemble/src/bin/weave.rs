@@ -56,7 +56,10 @@ fn main() -> anyhow::Result<()> {
         anyhow::bail!("cargo failed: {}", status);
     }
 
-    let mut entries = tmp.read_dir()?.map(|e| e.unwrap().path()).collect::<Vec<_>>();
+    let mut entries = tmp
+        .read_dir()?
+        .map(|e| e.unwrap().path())
+        .collect::<Vec<_>>();
     entries.sort();
     for entry in entries {
         println!("publish {:?}", entry);
