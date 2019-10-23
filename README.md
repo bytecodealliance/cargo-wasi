@@ -1,5 +1,7 @@
 # cargo wasi
 
+A Cargo subcommand to seamlessly build code for `wasm32-wasi`.
+
 Work in progress, more coming soon...
 
 # License
