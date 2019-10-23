@@ -46,7 +46,14 @@ fn main() {
     for arg in args {
         cmd.arg(arg);
     }
-    cmd.env("__CARGO_WASI_RENAME_TO", &path);
+
+    // On Unix we can rename the target executable on top of ourselves, but on
+    // Windows this never works so don't even try.
+    //
+    // FIXME(#2) should fix this for Windows as well
+    if cfg!(unix) {
+        cmd.env("__CARGO_WASI_RENAME_TO", &path);
+    }
 
     // Immediately try to execute this binary. If it doesn't exist then we need
     // to actually write it out to disk, but if it does exist then hey we saved
