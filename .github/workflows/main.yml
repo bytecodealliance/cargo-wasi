@@ -10,7 +10,8 @@ jobs:
     - name: Install Rust (rustup)
       run: rustup update stable --no-self-update && rustup default stable
 
-    - run: cargo test -p cargo-wasi
+    - run: cargo build
+    - run: cargo test
     - run: cargo test -p cargo-wasi-shim
     - run: cargo build -p assemble
 
