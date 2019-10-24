@@ -591,9 +591,15 @@ fn run_wasm_opt(
     cmd.arg(format!("-O{}", profile.opt_level));
     cmd.arg("-o").arg(wasm);
 
-    // for now always enable the name section, should make this conditional
-    // though!
-    cmd.arg("--debuginfo");
+    if build.enable_name_section(profile) {
+        cmd.arg("--debuginfo");
+    } else {
+        cmd.arg("--strip-debug");
+    }
+
+    if !build.enable_producers_section(profile) {
+        cmd.arg("--strip-producers");
+    }
 
     run_or_download(
         wasm_opt.as_ref(),
