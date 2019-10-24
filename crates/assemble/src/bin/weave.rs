@@ -93,7 +93,7 @@ fn main() -> anyhow::Result<()> {
     let top_manifest = fs::read_to_string("Cargo.toml").context("failed to read manifest")?;
     fs::write(
         "Cargo.toml",
-        top_manifest.replace("name = \"cargo-wasi\"", "name = \"cargo-wasi-src\""),
+        top_manifest.replacen("name = \"cargo-wasi\"", "name = \"cargo-wasi-src\"", 1),
     )?;
 
     if krate_files_here {

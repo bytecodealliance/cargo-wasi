@@ -9,11 +9,13 @@ readme = "README.md"
 description = """
 Subcommand for Cargo to easily build code for `wasm32-wasi`
 """
+exclude = ['cargo-wasi-*']
 
 # This package will be renamed on crates.io to `cargo-wasi-src`, so make sure
 # the binary is always called `cargo-wasi`.
 [[bin]]
 name = "cargo-wasi"
+path = "src/main.rs"
 
 [workspace]
 members = [
@@ -22,7 +24,7 @@ members = [
   'examples/markdown',
   'examples/hello-world',
 ]
-exclude = ['tmp', 'target', 'cargo-wasi-*']
+exclude = ['tmp', 'target']
 
 [dependencies]
 anyhow = "1.0"
