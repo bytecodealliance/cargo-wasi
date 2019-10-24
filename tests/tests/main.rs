@@ -105,3 +105,12 @@ fn check_works() {
 
     p.cargo_wasi("check").assert().success();
 }
+
+#[test]
+fn fix_works() {
+    let p = support::project()
+        .file("src/main.rs", "fn main() {}")
+        .build();
+
+    p.cargo_wasi("fix --allow-no-vcs").assert().success();
+}
