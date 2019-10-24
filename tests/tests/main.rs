@@ -202,7 +202,7 @@ $",
 .*Compiling foo v1.0.0 .*
 .*Running `rustc.*`
 .*Finished dev .*
-.*Processing .*foo.wasm
+.*Processing .*foo.rustc.wasm
 $",
         )?)
         .success();
@@ -216,7 +216,6 @@ $",
 .*Running \"cargo\" .*
 .*Fresh foo v1.0.0 .*
 .*Finished dev .*
-.*Processing .*foo.wasm
 $",
         )?)
         .success();
@@ -274,7 +273,7 @@ $",
 .*Compiling foo v1.0.0 .*
 .*Running `rustc.*`
 .*Finished release .*
-.*Processing .*foo.wasm
+.*Processing .*foo.rustc.wasm
 $",
         )?)
         .success();
@@ -288,7 +287,6 @@ $",
 .*Running \"cargo\" .*
 .*Fresh foo v1.0.0 .*
 .*Finished release .*
-.*Processing .*foo.wasm
 $",
         )?)
         .success();
@@ -346,7 +344,7 @@ fn wasm_bindgen() -> Result<()> {
 .*Compiling foo v1.0.0 .*
 .*Running `rustc.*`
 .*Finished dev .*
-error: failed to process wasm at `.*foo.wasm`
+error: failed to process wasm at `.*foo.rustc.wasm`
 
 Caused by:
     failed to create process \"my-wasm-bindgen\".*\"--keep-debug\".*
@@ -364,7 +362,7 @@ $",
         .stderr(is_match(
             "^\
 .*Finished dev .*
-error: failed to process wasm at `.*foo.wasm`
+error: failed to process wasm at `.*foo.rustc.wasm`
 
 Caused by:
     failed to create process \"my-wasm-bindgen\".*
@@ -384,7 +382,7 @@ $",
 .*Compiling wasm-bindgen .*
 .*Compiling foo .*
 .*Finished release .*
-error: failed to process wasm at `.*foo.wasm`
+error: failed to process wasm at `.*foo.rustc.wasm`
 
 Caused by:
     failed to create process \"my-wasm-bindgen\".*

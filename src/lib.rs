@@ -97,16 +97,40 @@ fn rmain(config: &mut Config) -> Result<()> {
     install_wasi_target(&config)?;
     let build = execute_cargo(&mut cargo, &config)?;
     for (wasm, profile, fresh) in build.wasms.iter() {
-        drop(fresh); // TODO: should handle this
+        // Cargo will always overwrite our `wasm` above with its own internal
+        // cache. It's internal cache largely uses hard links.
+        //
+        // If `fresh` is *false*, then Cargo just built `wasm` and we need to
+        // process it. If `fresh` is *true*, then we may have previously
+        // processed it. If our previous processing was successful the output
+        // was placed at `*.wasi.wasm`, so we use that to overwrite the
+        // `*.wasm` file. In the process we also create a `*.rustc.wasm` for
+        // debugging.
+        //
+        // Note that we remove files before renaming and such to ensure that
+        // we're not accidentally updating the wrong hard link and such.
+        let temporary_rustc = wasm.with_extension("rustc.wasm");
+        let temporary_wasi = wasm.with_extension("wasi.wasm");
 
-        // If we found `wasm-bindgen` as a dependency when building then
-        // automatically execute the `wasm-bindgen` CLI, otherwise just process
-        // using normal `walrus` commands.
-        let result = match &build.wasm_bindgen {
-            Some(version) => run_wasm_bindgen(wasm, profile, version, &config),
-            None => process_wasm(wasm, profile, &config),
-        };
-        result.with_context(|| format!("failed to process wasm at `{}`", wasm.display()))?;
+        drop(fs::remove_file(&temporary_rustc));
+        fs::rename(wasm, &temporary_rustc)?;
+        if !*fresh || !temporary_wasi.exists() {
+            // If we found `wasm-bindgen` as a dependency when building then
+            // automatically execute the `wasm-bindgen` CLI, otherwise just process
+            // using normal `walrus` commands.
+            let result = match &build.wasm_bindgen {
+                Some(version) => {
+                    run_wasm_bindgen(&temporary_wasi, &temporary_rustc, profile, version, &config)
+                }
+                None => process_wasm(&temporary_wasi, &temporary_rustc, profile, &config),
+            };
+            result.with_context(|| {
+                format!("failed to process wasm at `{}`", temporary_rustc.display())
+            })?;
+        }
+        drop(fs::remove_file(&wasm));
+        fs::hard_link(&temporary_wasi, &wasm)
+            .or_else(|_| fs::copy(&temporary_wasi, &wasm).map(|_| ()))?;
     }
 
     Ok(())
@@ -272,9 +296,9 @@ fn execute_cargo(cargo: &mut Command, config: &Config) -> Result<CargoBuild> {
 ///
 /// * Unconditionally demangle all Rust function names.
 /// * Use `profile` to optionally drop debug information
-fn process_wasm(wasm: &Path, profile: &Profile, config: &Config) -> Result<()> {
+fn process_wasm(wasm: &Path, temp: &Path, profile: &Profile, config: &Config) -> Result<()> {
     config.verbose(|| {
-        config.status("Processing", &wasm.display().to_string());
+        config.status("Processing", &temp.display().to_string());
     });
 
     let mut module = walrus::ModuleConfig::new()
@@ -283,7 +307,7 @@ fn process_wasm(wasm: &Path, profile: &Profile, config: &Config) -> Result<()> {
         .generate_dwarf(profile.debuginfo.is_some())
         .generate_name_section(true)
         .strict_validate(false)
-        .parse_file(wasm)?;
+        .parse_file(temp)?;
 
     // Demangle everything so it's got a more readable name since there's
     // no real need to mangle the symbols in wasm.
@@ -307,6 +331,7 @@ fn process_wasm(wasm: &Path, profile: &Profile, config: &Config) -> Result<()> {
 /// or installing `bindgen_version` via `cargo install`.
 fn run_wasm_bindgen(
     wasm: &Path,
+    temp: &Path,
     profile: &Profile,
     bindgen_version: &str,
     config: &Config,
@@ -324,7 +349,7 @@ fn run_wasm_bindgen(
         std::env::var_os("WASM_BINDGEN").unwrap_or(cache_wasm_bindgen.clone().into());
 
     let mut cmd = Command::new(&wasm_bindgen);
-    cmd.arg(wasm);
+    cmd.arg(temp);
     if profile.debuginfo.is_some() {
         cmd.arg("--keep-debug");
     }
