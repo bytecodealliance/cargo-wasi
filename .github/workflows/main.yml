@@ -40,7 +40,7 @@ jobs:
         set -e
         curl -LO https://github.com/CraneStation/wasmtime/releases/download/v0.3.0/wasmtime-v0.3.0-x86_64-windows.zip
         unzip wasmtime-v0.3.0-x86_64-windows.zip
-        echo ::add-path::`pwd`/wasmtime-v0.3.0-x86_64-windows
+        echo ::add-path::D:/a/cargo-wasi/cargo-wasi/wasmtime-v0.3.0-x86_64-windows
       shell: bash
       if: matrix.os == 'windows-latest'
 
