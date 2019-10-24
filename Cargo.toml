@@ -24,6 +24,7 @@ members = [
 exclude = ['tmp', 'target']
 
 [dependencies]
+atty = "0.2"
 anyhow = "1.0"
 dirs = "2.0.2"
 flate2 = "1"

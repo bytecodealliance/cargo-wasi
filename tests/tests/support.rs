@@ -103,7 +103,9 @@ impl Project {
 
     pub fn cargo_wasi(&self, cmd: &str) -> Command {
         let mut process = super::cargo_wasi(cmd);
-        process.current_dir(&self.root);
+        process
+            .current_dir(&self.root)
+            .env("CARGO_HOME", self.root.join("cargo-home"));
         return process;
     }
 }

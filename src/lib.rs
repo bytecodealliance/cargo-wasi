@@ -1,34 +1,25 @@
 use crate::cache::Cache;
+use crate::config::Config;
 use crate::utils::CommandExt;
 use anyhow::{bail, Context, Result};
 use std::fs::{self, File};
 use std::io::{self, Read};
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
-use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
 
 mod cache;
+mod config;
 mod utils;
 
 pub fn main() {
-    let err = match rmain() {
-        Ok(()) => return,
-        Err(e) => e,
-    };
-    let mut shell = StandardStream::stderr(ColorChoice::Auto);
-    drop(shell.set_color(ColorSpec::new().set_fg(Some(Color::Red)).set_bold(true)));
-    eprint!("error");
-    drop(shell.reset());
-    eprintln!(": {}", err);
-    for cause in err.chain().skip(1) {
-        eprintln!("");
-        drop(shell.set_color(ColorSpec::new().set_bold(true)));
-        eprint!("Caused by");
-        drop(shell.reset());
-        eprintln!(":");
-        eprintln!("    {}", cause.to_string().replace("\n", "\n    "));
+    let mut config = Config::new();
+    match rmain(&mut config) {
+        Ok(()) => {}
+        Err(e) => {
+            config.print_error(&e);
+            std::process::exit(1);
+        }
     }
-    std::process::exit(1);
 }
 
 #[derive(Debug)]
@@ -41,7 +32,9 @@ enum Subcommand {
     Fix,
 }
 
-fn rmain() -> Result<()> {
+fn rmain(config: &mut Config) -> Result<()> {
+    config.load_cache()?;
+
     // skip the current executable and the `wasi` inserted by Cargo
     let mut args = std::env::args_os().skip(2);
     let subcommand = args.next().and_then(|s| s.into_string().ok());
@@ -62,9 +55,6 @@ fn rmain() -> Result<()> {
         }
         _ => print_help(),
     };
-
-    let cache = Cache::new()?;
-    install_wasi_target(&cache)?;
 
     let mut cargo = Command::new("cargo");
     match subcommand {
@@ -95,17 +85,22 @@ fn rmain() -> Result<()> {
     cargo.arg("--target").arg("wasm32-wasi");
     cargo.arg("--message-format").arg("json-render-diagnostics");
     for arg in args {
+        if let Some(arg) = arg.to_str() {
+            if arg.starts_with("--verbose") || arg.starts_with("-v") {
+                config.set_verbose(true);
+            }
+        }
+
         cargo.arg(arg);
     }
-    let build = execute_cargo(&mut cargo)?;
+
+    install_wasi_target(&config)?;
+    let build = execute_cargo(&mut cargo, &config)?;
     for (wasm, profile, fresh) in build.wasms.iter() {
-        // If this wasm is "fresh" then there's no need to reprocess it
-        if *fresh {
-            continue;
-        }
+        drop(fresh); // TODO: should handle this
         let result = match &build.wasm_bindgen {
-            Some(version) => run_wasm_bindgen(wasm, profile, version, &cache),
-            None => process_wasm(wasm, profile),
+            Some(version) => run_wasm_bindgen(wasm, profile, version, &config),
+            None => process_wasm(wasm, profile, &config),
         };
         result.with_context(|| format!("failed to process wasm at `{}`", wasm.display()))?;
     }
@@ -136,7 +131,7 @@ about flags that can be passed to `cargo wasi build`, which mirrors the
     std::process::exit(0);
 }
 
-fn install_wasi_target(cache: &Cache) -> Result<()> {
+fn install_wasi_target(config: &Config) -> Result<()> {
     // We'll make a stamp file when we verify that wasm32-wasi is installed to
     // accelerate future checks. If that file exists, we're good to go.
     //
@@ -147,7 +142,7 @@ fn install_wasi_target(cache: &Cache) -> Result<()> {
     if let Ok(s) = std::env::var("RUSTUP_TOOLCHAIN") {
         stamp_name.push_str(&s);
     }
-    let stamp = cache.root().join(&stamp_name);
+    let stamp = config.cache().root().join(&stamp_name);
     if stamp.exists() {
         return Ok(());
     }
@@ -179,7 +174,7 @@ fn install_wasi_target(cache: &Cache) -> Result<()> {
     // rustup is not itself synchronized across processes so at least attempt to
     // synchronize our own calls. This may not work and if it doesn't we tried,
     // this is largely opportunistic anyway.
-    let _lock = utils::flock(&cache.root().join("rustup-lock"));
+    let _lock = utils::flock(&config.cache().root().join("rustup-lock"));
 
     Command::new("rustup")
         .arg("target")
@@ -207,7 +202,7 @@ struct Profile {
     test: bool,
 }
 
-fn execute_cargo(cargo: &mut Command) -> Result<CargoBuild> {
+fn execute_cargo(cargo: &mut Command, config: &Config) -> Result<CargoBuild> {
     #[derive(serde::Deserialize)]
     #[serde(tag = "reason", rename_all = "kebab-case")]
     enum Message {
@@ -219,6 +214,7 @@ fn execute_cargo(cargo: &mut Command) -> Result<CargoBuild> {
         },
         BuildScriptExecuted,
     }
+    config.verbose(|| config.status("Running", &format!("{:?}", cargo)));
     let mut process = cargo
         .stdout(Stdio::piped())
         .spawn()
@@ -263,7 +259,11 @@ fn execute_cargo(cargo: &mut Command) -> Result<CargoBuild> {
     Ok(build)
 }
 
-fn process_wasm(wasm: &Path, profile: &Profile) -> Result<()> {
+fn process_wasm(wasm: &Path, profile: &Profile, config: &Config) -> Result<()> {
+    config.verbose(|| {
+        config.status("Processing", &wasm.display().to_string());
+    });
+
     let mut module = walrus::ModuleConfig::new()
         // If the `debuginfo` is configured then we leave in the debuginfo
         // sections.
@@ -290,17 +290,19 @@ fn run_wasm_bindgen(
     wasm: &Path,
     profile: &Profile,
     bindgen_version: &str,
-    cache: &Cache,
+    config: &Config,
 ) -> Result<()> {
     let tempdir = tempfile::TempDir::new().context("failed to create temporary directory")?;
-    let cache_wasm_bindgen = cache
+    let cache_wasm_bindgen = config
+        .cache()
         .root()
         .join("wasm-bindgen")
         .join(bindgen_version)
         .join("wasm-bindgen")
         .with_extension(std::env::consts::EXE_EXTENSION);
 
-    let wasm_bindgen = std::env::var_os("WASM_BINDGEN").unwrap_or(cache_wasm_bindgen.clone().into());
+    let wasm_bindgen =
+        std::env::var_os("WASM_BINDGEN").unwrap_or(cache_wasm_bindgen.clone().into());
 
     let mut cmd = Command::new(&wasm_bindgen);
     cmd.arg(wasm);
@@ -311,6 +313,10 @@ fn run_wasm_bindgen(
     cmd.arg("--out-name").arg("foo");
     cmd.env("WASM_INTERFACE_TYPES", "1");
 
+    config.verbose(|| {
+        config.status("Running", &format!("{:?}", cmd));
+    });
+
     if let Err(e) = cmd.run() {
         let any_not_found = e.chain().any(|e| {
             if let Some(err) = e.downcast_ref::<io::Error>() {
@@ -319,7 +325,7 @@ fn run_wasm_bindgen(
             false
         });
         if any_not_found && wasm_bindgen == cache_wasm_bindgen {
-            install_wasm_bindgen(bindgen_version, wasm_bindgen.as_ref())?;
+            install_wasm_bindgen(bindgen_version, wasm_bindgen.as_ref(), config)?;
             cmd.run()?;
         } else {
             return Err(e);
@@ -331,7 +337,7 @@ fn run_wasm_bindgen(
     Ok(())
 }
 
-fn install_wasm_bindgen(version: &str, path: &Path) -> Result<()> {
+fn install_wasm_bindgen(version: &str, path: &Path, config: &Config) -> Result<()> {
     let parent = path.parent().unwrap();
     let filename = path.file_name().unwrap();
     fs::create_dir_all(parent)
@@ -364,7 +370,13 @@ fn install_wasm_bindgen(version: &str, path: &Path) -> Result<()> {
         url.push_str(target);
         url.push_str(".tar.gz");
 
-        status("Downloading", &format!("precompiled wasm-bindgen v{}", version));
+        config.status(
+            "Downloading",
+            &format!("precompiled wasm-bindgen v{}", version),
+        );
+        config.verbose(|| {
+            config.status("Get", &url);
+        });
 
         let response = reqwest::get(&url).context(format!("failed to fetch {}", url))?;
         if !response.status().is_success() {
@@ -388,7 +400,7 @@ fn install_wasm_bindgen(version: &str, path: &Path) -> Result<()> {
 
     // ... otherwise fall back to `cargo install`. Note that we modify `PATH`
     // here to suppress the warning that cargo emits about adding it to PATH.
-    status("Installing", &format!("wasm-bindgen v{}", version));
+    config.status("Installing", &format!("wasm-bindgen v{}", version));
     let path = std::env::var_os("PATH").unwrap_or_default();
     let mut path = std::env::split_paths(&path).collect::<Vec<_>>();
     path.push(parent.join("bin"));
@@ -407,12 +419,4 @@ fn install_wasm_bindgen(version: &str, path: &Path) -> Result<()> {
 
     fs::rename(parent.join("bin").join(filename), parent.join(filename))?;
     Ok(())
-}
-
-fn status(name: &str, rest: &str) {
-    let mut shell = StandardStream::stderr(ColorChoice::Auto);
-    drop(shell.set_color(ColorSpec::new().set_fg(Some(Color::Green)).set_bold(true)));
-    eprint!("{:>12}", name);
-    drop(shell.reset());
-    eprintln!(" {}", rest);
 }

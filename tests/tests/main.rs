@@ -1,6 +1,7 @@
 use anyhow::{Context, Result};
 use assert_cmd::prelude::*;
 use predicates::prelude::*;
+use predicates::str::is_match;
 use std::process::Command;
 
 mod support;
@@ -159,5 +160,241 @@ fn assert_demangled(wasm: &[u8]) -> Result<()> {
         }
     }
     assert!(saw_name);
+    Ok(())
+}
+
+#[test]
+fn check_output() -> Result<()> {
+    // download the wasi target and get that out of the way
+    support::project()
+        .file("src/main.rs", "fn main() {}")
+        .build()
+        .cargo_wasi("check")
+        .assert()
+        .success();
+
+    // Default output
+    support::project()
+        .file("src/main.rs", "fn main() {}")
+        .build()
+        .cargo_wasi("build")
+        .assert()
+        .stdout("")
+        .stderr(is_match(
+            "^\
+.*Compiling foo v1.0.0 .*
+.*Finished dev .*
+$",
+        )?)
+        .success();
+
+    let p = support::project()
+        .file("src/main.rs", "fn main() {}")
+        .build();
+
+    // Default verbose output
+    p.cargo_wasi("build -v")
+        .assert()
+        .stdout("")
+        .stderr(is_match(
+            "^\
+.*Running \"cargo\" .*
+.*Compiling foo v1.0.0 .*
+.*Running `rustc.*`
+.*Finished dev .*
+.*Processing .*foo.wasm
+$",
+        )?)
+        .success();
+
+    // Incremental verbose output
+    p.cargo_wasi("build -v")
+        .assert()
+        .stdout("")
+        .stderr(is_match(
+            "^\
+.*Running \"cargo\" .*
+.*Fresh foo v1.0.0 .*
+.*Finished dev .*
+.*Processing .*foo.wasm
+$",
+        )?)
+        .success();
+
+    // Incremental non-verbose output
+    p.cargo_wasi("build")
+        .assert()
+        .stdout("")
+        .stderr(is_match(
+            "^\
+.*Finished dev .*
+$",
+        )?)
+        .success();
+
+    Ok(())
+}
+
+#[test]
+fn check_output_release() -> Result<()> {
+    // download the wasi target and get that out of the way
+    support::project()
+        .file("src/main.rs", "fn main() {}")
+        .build()
+        .cargo_wasi("check")
+        .assert()
+        .success();
+
+    // Default output
+    support::project()
+        .file("src/main.rs", "fn main() {}")
+        .build()
+        .cargo_wasi("build --release")
+        .assert()
+        .stdout("")
+        .stderr(is_match(
+            "^\
+.*Compiling foo v1.0.0 .*
+.*Finished release .*
+$",
+        )?)
+        .success();
+
+    let p = support::project()
+        .file("src/main.rs", "fn main() {}")
+        .build();
+
+    // Default verbose output
+    p.cargo_wasi("build -v --release")
+        .assert()
+        .stdout("")
+        .stderr(is_match(
+            "^\
+.*Running \"cargo\" .*
+.*Compiling foo v1.0.0 .*
+.*Running `rustc.*`
+.*Finished release .*
+.*Processing .*foo.wasm
+$",
+        )?)
+        .success();
+
+    // Incremental verbose output
+    p.cargo_wasi("build -v --release")
+        .assert()
+        .stdout("")
+        .stderr(is_match(
+            "^\
+.*Running \"cargo\" .*
+.*Fresh foo v1.0.0 .*
+.*Finished release .*
+.*Processing .*foo.wasm
+$",
+        )?)
+        .success();
+
+    // Incremental non-verbose output
+    p.cargo_wasi("build --release")
+        .assert()
+        .stdout("")
+        .stderr(is_match(
+            "^\
+.*Finished release .*
+$",
+        )?)
+        .success();
+
+    Ok(())
+}
+
+// feign the actual `wasm-bindgen` here because it takes too long to compile
+#[test]
+fn wasm_bindgen() -> Result<()> {
+    let p = support::project()
+        .file(
+            "Cargo.toml",
+            r#"
+                [package]
+                name = "foo"
+                version = '1.0.0'
+
+                [dependencies]
+                wasm-bindgen = { path = 'wasm-bindgen' }
+            "#,
+        )
+        .file("src/main.rs", "fn main() {}")
+        .file(
+            "wasm-bindgen/Cargo.toml",
+            r#"
+                [package]
+                name = "wasm-bindgen"
+                version = '1.0.0'
+            "#,
+        )
+        .file("wasm-bindgen/src/lib.rs", "")
+        .build();
+
+    p.cargo_wasi("build -v")
+        .env("WASM_BINDGEN", "my-wasm-bindgen")
+        .assert()
+        .stdout("")
+        .stderr(is_match(
+            "^\
+.*Running \"cargo\" .*
+.*Compiling wasm-bindgen v1.0.0 .*
+.*Running `rustc.*`
+.*Compiling foo v1.0.0 .*
+.*Running `rustc.*`
+.*Finished dev .*
+.*Running \"my-wasm-bindgen\".*
+error: failed to process wasm at `.*foo.wasm`
+
+Caused by:
+    failed to create process \"my-wasm-bindgen\".*\"--keep-debug\".*
+
+Caused by:
+    .*
+$",
+        )?)
+        .code(1);
+
+    p.cargo_wasi("build")
+        .env("WASM_BINDGEN", "my-wasm-bindgen")
+        .assert()
+        .stdout("")
+        .stderr(is_match(
+            "^\
+.*Finished dev .*
+error: failed to process wasm at `.*foo.wasm`
+
+Caused by:
+    failed to create process \"my-wasm-bindgen\".*
+
+Caused by:
+    .*
+$",
+        )?)
+        .code(1);
+
+    p.cargo_wasi("build --release")
+        .env("WASM_BINDGEN", "my-wasm-bindgen")
+        .assert()
+        .stdout("")
+        .stderr(is_match(
+            "^\
+.*Compiling wasm-bindgen .*
+.*Compiling foo .*
+.*Finished release .*
+error: failed to process wasm at `.*foo.wasm`
+
+Caused by:
+    failed to create process \"my-wasm-bindgen\".*
+
+Caused by:
+    .*
+$",
+        )?)
+        .code(1);
+
     Ok(())
 }
