@@ -2,6 +2,7 @@ use crate::cache::Cache;
 use crate::config::Config;
 use crate::utils::CommandExt;
 use anyhow::{bail, Context, Result};
+use std::env;
 use std::fs::{self, File};
 use std::io::{self, Read};
 use std::path::{Path, PathBuf};
@@ -12,6 +13,16 @@ mod config;
 mod utils;
 
 pub fn main() {
+    // See comments in `rmain` around `*_RUNNER` for why this exists here.
+    if env::var("__CARGO_WASI_RUNNER_SHIM").is_ok() {
+        let args = env::args().skip(1).collect();
+        println!(
+            "{}",
+            serde_json::to_string(&CargoMessage::RunWithArgs { args }).unwrap(),
+        );
+        return;
+    }
+
     let mut config = Config::new();
     match rmain(&mut config) {
         Ok(()) => {}
@@ -36,7 +47,7 @@ fn rmain(config: &mut Config) -> Result<()> {
     config.load_cache()?;
 
     // skip the current executable and the `wasi` inserted by Cargo
-    let mut args = std::env::args_os().skip(2);
+    let mut args = env::args_os().skip(2);
     let subcommand = args.next().and_then(|s| s.into_string().ok());
     let subcommand = match subcommand.as_ref().map(|s| s.as_str()) {
         Some("build") => Subcommand::Build,
@@ -57,28 +68,14 @@ fn rmain(config: &mut Config) -> Result<()> {
     };
 
     let mut cargo = Command::new("cargo");
-    match subcommand {
-        Subcommand::Build => {
-            cargo.arg("build");
-        }
-        Subcommand::Check => {
-            cargo.arg("check");
-        }
-        Subcommand::Fix => {
-            cargo.arg("fix");
-        }
-        Subcommand::Test => {
-            cargo.arg("test");
-            cargo.arg("--no-run");
-        }
-        Subcommand::Bench => {
-            cargo.arg("bench");
-            cargo.arg("--no-run");
-        }
-        Subcommand::Run => {
-            cargo.arg("build");
-        }
-    }
+    cargo.arg(match subcommand {
+        Subcommand::Build => "build",
+        Subcommand::Check => "check",
+        Subcommand::Fix => "fix",
+        Subcommand::Test => "test",
+        Subcommand::Bench => "bench",
+        Subcommand::Run => "run",
+    });
 
     // TODO: figure out when these flags are already passed to `cargo` and skip
     // passing them ourselves.
@@ -92,6 +89,36 @@ fn rmain(config: &mut Config) -> Result<()> {
         }
 
         cargo.arg(arg);
+    }
+
+    // If Cargo actually executes a wasm file, we don't want it to. We need to
+    // postprocess wasm files (wasm-opt, wasm-bindgen, etc). As a result we will
+    // actually postprocess wasm files after the build. To work around this we
+    // could pass `--no-run` for `test`/`bench`, but there's unfortunately no
+    // equivalent for `run`. Additionally we want to learn what arguments Cargo
+    // parsed to pass to each wasm file.
+    //
+    // To solve this all we do a bit of a switcharoo. We say that *we* are the
+    // runner, and our binary is configured to simply print a json message at
+    // the beginning. We'll slurp up these json messages and then actually
+    // execute everything at the end.
+    //
+    // Also note that we check here before we actually build that a runtime is
+    // present, notably `wasmtime`.
+    match subcommand {
+        Subcommand::Run | Subcommand::Bench | Subcommand::Test => {
+            if which::which("wasmtime").is_err() {
+                bail!(
+                    "failed to find `wasmtime` in $PATH, you'll want to \
+                     install `wasmtime` before running this command by \
+                     visiting https://wasmtime.dev/"
+                );
+            }
+            cargo.env("__CARGO_WASI_RUNNER_SHIM", "1");
+            cargo.env("CARGO_TARGET_WASM32_WASI_RUNNER", env::current_exe()?);
+        }
+
+        Subcommand::Build | Subcommand::Check | Subcommand::Fix => {}
     }
 
     install_wasi_target(&config)?;
@@ -133,6 +160,11 @@ fn rmain(config: &mut Config) -> Result<()> {
             .or_else(|_| fs::copy(&temporary_wasi, &wasm).map(|_| ()))?;
     }
 
+    for run in build.runs.iter() {
+        config.status("Running", &format!("`{}`", run.join(" ")));
+        Command::new("wasmtime").args(run.iter()).run()?;
+    }
+
     Ok(())
 }
 
@@ -168,7 +200,7 @@ fn install_wasi_target(config: &Config) -> Result<()> {
     // if you're moving across toolchains we always make sure that wasi is
     // installed.
     let mut stamp_name = "wasi-target-installed".to_string();
-    if let Ok(s) = std::env::var("RUSTUP_TOOLCHAIN") {
+    if let Ok(s) = env::var("RUSTUP_TOOLCHAIN") {
         stamp_name.push_str(&s);
     }
     let stamp = config.cache().root().join(&stamp_name);
@@ -192,7 +224,7 @@ fn install_wasi_target(config: &Config) -> Result<()> {
     // ... and that doesn't exist, so we need to install it! If we're not a
     // rustup toolchain then someone else has to figure out how to install the
     // wasi target, otherwise we delegate to rustup.
-    if std::env::var_os("RUSTUP_TOOLCHAIN").is_none() {
+    if env::var_os("RUSTUP_TOOLCHAIN").is_none() {
         bail!(
             "failed to find the `wasm32-wasi` target installed, and rustup \
              is also not detected, you'll need to be sure to install the \
@@ -222,29 +254,35 @@ struct CargoBuild {
     // profile that they were built with and whether or not it was `fresh`
     // during this build.
     wasms: Vec<(PathBuf, Profile, bool)>,
+    // executed commands as part of the cargo build
+    runs: Vec<Vec<String>>,
 }
 
-#[derive(serde::Deserialize, Debug, Clone)]
+#[derive(serde::Deserialize, serde::Serialize, Debug, Clone)]
 struct Profile {
     opt_level: String,
     debuginfo: Option<u32>,
     test: bool,
 }
 
+#[derive(serde::Deserialize, serde::Serialize)]
+#[serde(tag = "reason", rename_all = "kebab-case")]
+enum CargoMessage {
+    CompilerArtifact {
+        filenames: Vec<String>,
+        package_id: String,
+        profile: Profile,
+        fresh: bool,
+    },
+    BuildScriptExecuted,
+    RunWithArgs {
+        args: Vec<String>,
+    },
+}
+
 /// Executes the `cargo` command, reading all of the JSON that pops out and
 /// parsing that into a `CargoBuild`.
 fn execute_cargo(cargo: &mut Command, config: &Config) -> Result<CargoBuild> {
-    #[derive(serde::Deserialize)]
-    #[serde(tag = "reason", rename_all = "kebab-case")]
-    enum Message {
-        CompilerArtifact {
-            filenames: Vec<String>,
-            package_id: String,
-            profile: Profile,
-            fresh: bool,
-        },
-        BuildScriptExecuted,
-    }
     config.verbose(|| config.status("Running", &format!("{:?}", cargo)));
     let mut process = cargo
         .stdout(Stdio::piped())
@@ -263,7 +301,7 @@ fn execute_cargo(cargo: &mut Command, config: &Config) -> Result<CargoBuild> {
     let mut build = CargoBuild::default();
     for line in json.lines() {
         match serde_json::from_str(line) {
-            Ok(Message::CompilerArtifact {
+            Ok(CargoMessage::CompilerArtifact {
                 filenames,
                 profile,
                 package_id,
@@ -282,7 +320,8 @@ fn execute_cargo(cargo: &mut Command, config: &Config) -> Result<CargoBuild> {
                     }
                 }
             }
-            Ok(Message::BuildScriptExecuted) => {}
+            Ok(CargoMessage::RunWithArgs { args }) => build.runs.push(args),
+            Ok(CargoMessage::BuildScriptExecuted) => {}
             Err(e) => bail!("failed to parse {}: {}", line, e),
         }
     }
@@ -343,10 +382,9 @@ fn run_wasm_bindgen(
         .join("wasm-bindgen")
         .join(bindgen_version)
         .join("wasm-bindgen")
-        .with_extension(std::env::consts::EXE_EXTENSION);
+        .with_extension(env::consts::EXE_EXTENSION);
 
-    let wasm_bindgen =
-        std::env::var_os("WASM_BINDGEN").unwrap_or(cache_wasm_bindgen.clone().into());
+    let wasm_bindgen = env::var_os("WASM_BINDGEN").unwrap_or(cache_wasm_bindgen.clone().into());
 
     let mut cmd = Command::new(&wasm_bindgen);
     cmd.arg(temp);
@@ -456,10 +494,10 @@ fn install_wasm_bindgen(version: &str, path: &Path, config: &Config) -> Result<(
     // ... otherwise fall back to `cargo install`. Note that we modify `PATH`
     // here to suppress the warning that cargo emits about adding it to PATH.
     config.status("Installing", &format!("wasm-bindgen v{}", version));
-    let path = std::env::var_os("PATH").unwrap_or_default();
-    let mut path = std::env::split_paths(&path).collect::<Vec<_>>();
+    let path = env::var_os("PATH").unwrap_or_default();
+    let mut path = env::split_paths(&path).collect::<Vec<_>>();
     path.push(parent.join("bin"));
-    let path = std::env::join_paths(&path)?;
+    let path = env::join_paths(&path)?;
     Command::new("cargo")
         .arg("install")
         .arg("wasm-bindgen-cli")

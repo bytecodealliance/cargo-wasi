@@ -395,3 +395,132 @@ $",
 
     Ok(())
 }
+
+#[test]
+fn run() -> Result<()> {
+    support::project()
+        .file("src/main.rs", "fn main() {}")
+        .build()
+        .cargo_wasi("run")
+        .assert()
+        .stdout("")
+        .stderr(is_match(
+            "^\
+.*Compiling foo v1.0.0 .*
+.*Finished dev .*
+.*Running `.*`
+.*Running `.*`
+$",
+        )?)
+        .success();
+
+    support::project()
+        .file(
+            "src/main.rs",
+            r#"
+                fn main() { println!("hello") }
+            "#,
+        )
+        .build()
+        .cargo_wasi("run")
+        .assert()
+        .stdout("hello\n")
+        .stderr(is_match(
+            "^\
+.*Compiling foo v1.0.0 .*
+.*Finished dev .*
+.*Running `.*`
+.*Running `.*`
+$",
+        )?)
+        .success();
+    Ok(())
+}
+
+#[test]
+fn run_forward_args() -> Result<()> {
+    support::project()
+        .file(
+            "src/main.rs",
+            r#"
+                fn main() {
+                    println!("{:?}", std::env::args().skip(1).collect::<Vec<_>>());
+                }
+            "#,
+        )
+        .build()
+        .cargo_wasi("run a -- -b c")
+        .assert()
+        .stdout("[\"a\", \"-b\", \"c\"]\n")
+        .success();
+    Ok(())
+}
+
+#[test]
+fn test() -> Result<()> {
+    support::project()
+        .file(
+            "src/lib.rs",
+            r#"
+                #[test]
+                fn smoke() {}
+            "#,
+        )
+        .build()
+        .cargo_wasi("test")
+        .assert()
+        .stdout(
+            "
+running 1 test
+test smoke ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out
+
+",
+        )
+        .stderr(is_match(
+            "^\
+.*Compiling foo v1.0.0 .*
+.*Finished dev .*
+.*Running .*
+.*Running `.*`
+$",
+        )?)
+        .success();
+    Ok(())
+}
+
+#[test]
+fn run_nothing() -> Result<()> {
+    support::project()
+        .file("src/lib.rs", "")
+        .build()
+        .cargo_wasi("run")
+        .assert()
+        .code(1);
+    Ok(())
+}
+
+#[test]
+fn run_many() -> Result<()> {
+    support::project()
+        .file("src/bin/foo.rs", "")
+        .file("src/bin/bar.rs", "")
+        .build()
+        .cargo_wasi("run")
+        .assert()
+        .code(1);
+    Ok(())
+}
+
+#[test]
+fn run_one() -> Result<()> {
+    support::project()
+        .file("src/bin/foo.rs", "fn main() {}")
+        .file("src/bin/bar.rs", "")
+        .build()
+        .cargo_wasi("run --bin foo")
+        .assert()
+        .code(0);
+    Ok(())
+}
