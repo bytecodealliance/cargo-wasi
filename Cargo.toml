@@ -22,7 +22,7 @@ members = [
   'examples/markdown',
   'examples/hello-world',
 ]
-exclude = ['tmp', 'target']
+exclude = ['tmp', 'target', 'cargo-wasi-*']
 
 [dependencies]
 anyhow = "1.0"
