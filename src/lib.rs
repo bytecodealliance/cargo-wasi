@@ -98,6 +98,10 @@ fn rmain(config: &mut Config) -> Result<()> {
     let build = execute_cargo(&mut cargo, &config)?;
     for (wasm, profile, fresh) in build.wasms.iter() {
         drop(fresh); // TODO: should handle this
+
+        // If we found `wasm-bindgen` as a dependency when building then
+        // automatically execute the `wasm-bindgen` CLI, otherwise just process
+        // using normal `walrus` commands.
         let result = match &build.wasm_bindgen {
             Some(version) => run_wasm_bindgen(wasm, profile, version, &config),
             None => process_wasm(wasm, profile, &config),
@@ -131,6 +135,7 @@ about flags that can be passed to `cargo wasi build`, which mirrors the
     std::process::exit(0);
 }
 
+/// Installs the `wasm32-wasi` target into our global cache.
 fn install_wasi_target(config: &Config) -> Result<()> {
     // We'll make a stamp file when we verify that wasm32-wasi is installed to
     // accelerate future checks. If that file exists, we're good to go.
@@ -202,6 +207,8 @@ struct Profile {
     test: bool,
 }
 
+/// Executes the `cargo` command, reading all of the JSON that pops out and
+/// parsing that into a `CargoBuild`.
 fn execute_cargo(cargo: &mut Command, config: &Config) -> Result<CargoBuild> {
     #[derive(serde::Deserialize)]
     #[serde(tag = "reason", rename_all = "kebab-case")]
@@ -259,6 +266,12 @@ fn execute_cargo(cargo: &mut Command, config: &Config) -> Result<CargoBuild> {
     Ok(build)
 }
 
+/// Process a wasm file that doesn't use `wasm-bindgen`, using `walrus` instead.
+///
+/// This will load up the module and do things like:
+///
+/// * Unconditionally demangle all Rust function names.
+/// * Use `profile` to optionally drop debug information
 fn process_wasm(wasm: &Path, profile: &Profile, config: &Config) -> Result<()> {
     config.verbose(|| {
         config.status("Processing", &wasm.display().to_string());
@@ -286,6 +299,12 @@ fn process_wasm(wasm: &Path, profile: &Profile, config: &Config) -> Result<()> {
     Ok(())
 }
 
+/// Executes `wasm-bindgen` over the `wasm` file provided, using `profile` to
+/// guide the flags to pass to `wasm-bindgen`.
+///
+/// If `$WASM_BINDGEN` is set we'll unconditionally use that, otherwise we'll
+/// fall back to either downloading a precompiled version of `bindgen_version`
+/// or installing `bindgen_version` via `cargo install`.
 fn run_wasm_bindgen(
     wasm: &Path,
     profile: &Profile,
@@ -317,6 +336,9 @@ fn run_wasm_bindgen(
         config.status("Running", &format!("{:?}", cmd));
     });
 
+    // Try executing first, and if that fails due to process not found *and*
+    // we're using a cached version, then we try to install wasm-bindgen and
+    // then rerun the command.
     if let Err(e) = cmd.run() {
         let any_not_found = e.chain().any(|e| {
             if let Some(err) = e.downcast_ref::<io::Error>() {
@@ -337,6 +359,9 @@ fn run_wasm_bindgen(
     Ok(())
 }
 
+/// Installs `wasm-bindgen` executable to `path` with the version `version`.
+///
+/// This will download from the network or do a very long compile locally.
 fn install_wasm_bindgen(version: &str, path: &Path, config: &Config) -> Result<()> {
     let parent = path.parent().unwrap();
     let filename = path.file_name().unwrap();

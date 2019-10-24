@@ -31,8 +31,13 @@ jobs:
     steps:
     - uses: actions/checkout@master
     - name: Install Rust
-      run: rustup update beta && rustup default beta
+      run: rustup update beta && rustup update stable && rustup default beta
     - run: cargo install --debug
+
+    # Verify that we can switch between channels (stable/beta) and we'll
+    # automatically get the wasi target on both.
+    - run: (cd examples/hello-world && cargo +stable wasi build --release -v)
+    - run: (cd examples/hello-world && cargo +beta wasi build --release -v)
     - run: (cd examples/markdown && cargo wasi build --release -v)
 
   build:
