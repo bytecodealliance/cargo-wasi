@@ -458,14 +458,7 @@ fn run_wasm_bindgen(
 ) -> Result<()> {
     let tempdir = tempfile::TempDir::new_in(wasm.parent().unwrap())
         .context("failed to create temporary directory")?;
-    let cache_wasm_bindgen = config
-        .cache()
-        .root()
-        .join("wasm-bindgen")
-        .join(bindgen_version)
-        .join("wasm-bindgen")
-        .with_extension(env::consts::EXE_EXTENSION);
-    let wasm_bindgen = get_tool(config, "WASM_BINDGEN", &cache_wasm_bindgen);
+    let (wasm_bindgen, cache_wasm_bindgen) = config.get_wasm_bindgen(bindgen_version);
 
     let mut cmd = Command::new(&wasm_bindgen);
     cmd.arg(temp);
@@ -577,12 +570,7 @@ fn run_wasm_opt(
     config.status("Optimizing", "with wasm-opt");
     let tempdir = tempfile::TempDir::new_in(wasm.parent().unwrap())
         .context("failed to create temporary directory")?;
-    let cached_wasm_opt = config
-        .cache()
-        .root()
-        .join("wasm-opt")
-        .with_extension(env::consts::EXE_EXTENSION);
-    let wasm_opt = get_tool(config, "WASM_OPT", &cached_wasm_opt);
+    let (wasm_opt, cached_wasm_opt) = config.get_wasm_opt();
 
     let input = tempdir.path().join("input.wasm");
     fs::write(&input, &bytes)?;
@@ -659,17 +647,6 @@ fn run_or_download(
         config.status("Running", &format!("{:?}", cmd));
     });
     cmd.run()
-}
-
-/// Returns the path to execute a tool, either governed by the `env` if it's set
-/// or the `cache` as the fallback.
-///
-/// Takes a `Config` for future compatibility (maybe)
-fn get_tool(_config: &Config, env: &str, cache: &Path) -> PathBuf {
-    if let Some(s) = std::env::var_os(env) {
-        return s.into();
-    }
-    return cache.to_path_buf();
 }
 
 fn install_wasm_opt(path: &Path, config: &Config) -> Result<()> {
