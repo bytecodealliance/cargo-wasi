@@ -1,5 +1,7 @@
-use anyhow::{anyhow, bail, Context, Result};
+use crate::config::Config;
+use anyhow::{anyhow, Context, Error, Result};
 use fs2::FileExt;
+use std::fmt;
 use std::fs::{File, OpenOptions};
 use std::path::Path;
 use std::process::{Command, ExitStatus, Output, Stdio};
@@ -50,19 +52,14 @@ pub fn check_success(
     if status.success() {
         return Ok(());
     }
-    let mut message = format!("failed to execute {:?}", cmd);
-    message.push_str(&format!("\n\tstatus: {}", status));
-    if !stdout.is_empty() {
-        let stdout = String::from_utf8_lossy(&stdout);
-        let stdout = stdout.replace("\n", "\n\t\t");
-        message.push_str(&format!("\n\tstdout:\n\t\t{}", stdout));
+    Err(ProcessError {
+        cmd_desc: format!("{:?}", cmd),
+        status: status.clone(),
+        stdout: stdout.to_vec(),
+        stderr: stderr.to_vec(),
+        hidden: false,
     }
-    if !stderr.is_empty() {
-        let stderr = String::from_utf8_lossy(&stderr);
-        let stderr = stderr.replace("\n", "\n\t\t");
-        message.push_str(&format!("\n\tstderr:\n\t\t{}", stderr));
-    }
-    bail!("{}", message);
+    .into())
 }
 
 pub fn flock(path: &Path) -> Result<impl Drop> {
@@ -81,3 +78,63 @@ pub fn flock(path: &Path) -> Result<impl Drop> {
         }
     }
 }
+
+/// If `Error` is a `ProcessError` and it looks like a "normal exit", then it
+/// flags that the `ProcessError` will be hidden.
+///
+/// Hidden errors won't get printed at the top-level as they propagate outwards
+/// since it's trusted that the relevant program printed out all the relevant
+/// information.
+pub fn hide_normal_process_exit(error: Error, config: &Config) -> Error {
+    if config.is_verbose() {
+        return error;
+    }
+    let mut error = match error.downcast::<ProcessError>() {
+        Ok(e) => e,
+        Err(e) => return e,
+    };
+    if let Some(code) = error.status.code() {
+        if code < 128 && error.stdout.is_empty() && error.stderr.is_empty() {
+            error.hidden = true;
+        }
+    }
+    error.into()
+}
+
+/// Checks if `Error` has been hidden via `hide_normal_process_exit` above.
+pub fn normal_process_exit_code(error: &Error) -> Option<i32> {
+    let process_error = error.downcast_ref::<ProcessError>()?;
+    if !process_error.hidden {
+        return None;
+    }
+    process_error.status.code()
+}
+
+#[derive(Debug)]
+struct ProcessError {
+    status: ExitStatus,
+    hidden: bool,
+    stdout: Vec<u8>,
+    stderr: Vec<u8>,
+    cmd_desc: String,
+}
+
+impl fmt::Display for ProcessError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "failed to execute {}", self.cmd_desc)?;
+        write!(f, "\n    status: {}", self.status)?;
+        if !self.stdout.is_empty() {
+            let stdout = String::from_utf8_lossy(&self.stdout);
+            let stdout = stdout.replace("\n", "\n        ");
+            write!(f, "\n    stdout:\n        {}", stdout)?;
+        }
+        if !self.stderr.is_empty() {
+            let stderr = String::from_utf8_lossy(&self.stderr);
+            let stderr = stderr.replace("\n", "\n        ");
+            write!(f, "\n    stderr:\n        {}", stderr)?;
+        }
+        Ok(())
+    }
+}
+
+impl std::error::Error for ProcessError {}

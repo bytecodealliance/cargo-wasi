@@ -500,7 +500,7 @@ fn run_nothing() -> Result<()> {
         .build()
         .cargo_wasi("run")
         .assert()
-        .code(1);
+        .code(101);
     Ok(())
 }
 
@@ -512,7 +512,7 @@ fn run_many() -> Result<()> {
         .build()
         .cargo_wasi("run")
         .assert()
-        .code(1);
+        .code(101);
     Ok(())
 }
 
@@ -567,6 +567,8 @@ fn run_panic() -> Result<()> {
 .*Running `.*`
 thread 'main' panicked at 'test', src/main.rs.*
 note: run with `RUST_BACKTRACE=1` .*
+error: failed to process main module `.*`
+    caused by: Instantiation error: .*
 $",
         )?)
         .code(1);

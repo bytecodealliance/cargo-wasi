@@ -169,7 +169,11 @@ fn rmain(config: &mut Config) -> Result<()> {
 
     for run in build.runs.iter() {
         config.status("Running", &format!("`{}`", run.join(" ")));
-        Command::new("wasmtime").arg("--").args(run.iter()).run()?;
+        Command::new("wasmtime")
+            .arg("--")
+            .args(run.iter())
+            .run()
+            .map_err(|e| utils::hide_normal_process_exit(e, config))?;
     }
 
     Ok(())
@@ -304,7 +308,8 @@ fn execute_cargo(cargo: &mut Command, config: &Config) -> Result<CargoBuild> {
         .read_to_string(&mut json)
         .context("failed to read cargo stdout into a json string")?;
     let status = process.wait().context("failed to wait on `cargo`")?;
-    utils::check_success(&cargo, &status, &[], &[])?;
+    utils::check_success(&cargo, &status, &[], &[])
+        .map_err(|e| utils::hide_normal_process_exit(e, config))?;
 
     let mut build = CargoBuild::default();
     for line in json.lines() {

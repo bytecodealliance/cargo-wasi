@@ -31,6 +31,10 @@ impl Config {
         self.cache.as_ref().expect("cache not loaded yet")
     }
 
+    pub fn is_verbose(&self) -> bool {
+        self.verbose
+    }
+
     pub fn verbose(&self, f: impl FnOnce()) {
         if self.verbose {
             f();
@@ -50,6 +54,9 @@ impl Config {
     }
 
     pub fn print_error(&self, err: &anyhow::Error) {
+        if let Some(code) = crate::utils::normal_process_exit_code(err) {
+            std::process::exit(code);
+        }
         let mut shell = StandardStream::stderr(self.choice);
         drop(shell.set_color(ColorSpec::new().set_fg(Some(Color::Red)).set_bold(true)));
         eprint!("error");
