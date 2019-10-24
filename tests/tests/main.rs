@@ -276,7 +276,7 @@ $",
 .*Finished release .*
 .*Processing .*foo.rustc.wasm
 .*Optimizing with wasm-opt
-.*Running \".*wasm-opt\" .*
+.*Running \".*wasm-opt .*
 $",
         )?)
         .success();
@@ -350,7 +350,7 @@ fn wasm_bindgen() -> Result<()> {
 error: failed to process wasm at `.*foo.rustc.wasm`
 
 Caused by:
-    failed to create process \"my-wasm-bindgen\".*\"--keep-debug\".*
+    failed to create process \"my-wasm-bindgen.* \"--keep-debug\".*
 
 Caused by:
     .*
@@ -368,7 +368,7 @@ $",
 error: failed to process wasm at `.*foo.rustc.wasm`
 
 Caused by:
-    failed to create process \"my-wasm-bindgen\".*
+    failed to create process \"my-wasm-bindgen.*
 
 Caused by:
     .*
@@ -388,7 +388,7 @@ $",
 error: failed to process wasm at `.*foo.rustc.wasm`
 
 Caused by:
-    failed to create process \"my-wasm-bindgen\".*
+    failed to create process \"my-wasm-bindgen.*
 
 Caused by:
     .*
