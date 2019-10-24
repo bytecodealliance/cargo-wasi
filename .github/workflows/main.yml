@@ -25,6 +25,16 @@ jobs:
     - run: cargo test -p cargo-wasi-shim
     - run: cargo build -p assemble
 
+  examples:
+    name: Examples
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@master
+    - name: Install Rust
+      run: rustup update beta && rustup default beta
+    - run: cargo install --debug
+    - run: (cd examples/markdown && cargo wasi build --release)
+
   build:
     name: Build
     runs-on: ${{ matrix.os }}

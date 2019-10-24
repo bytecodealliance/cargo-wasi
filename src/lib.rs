@@ -1,8 +1,8 @@
 use crate::cache::Cache;
 use crate::utils::CommandExt;
 use anyhow::{bail, Context, Result};
-use std::fs::File;
-use std::io::Read;
+use std::fs::{self, File};
+use std::io::{self, Read};
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
@@ -98,9 +98,16 @@ fn rmain() -> Result<()> {
         cargo.arg(arg);
     }
     let build = execute_cargo(&mut cargo)?;
-    match &build.wasm_bindgen {
-        Some(version) => run_wasm_bindgen(&build, version)?,
-        None => process_wasms(&build)?,
+    for (wasm, profile, fresh) in build.wasms.iter() {
+        // If this wasm is "fresh" then there's no need to reprocess it
+        if *fresh {
+            continue;
+        }
+        let result = match &build.wasm_bindgen {
+            Some(version) => run_wasm_bindgen(wasm, profile, version, &cache),
+            None => process_wasm(wasm, profile),
+        };
+        result.with_context(|| format!("failed to process wasm at `{}`", wasm.display()))?;
     }
 
     Ok(())
@@ -132,7 +139,15 @@ about flags that can be passed to `cargo wasi build`, which mirrors the
 fn install_wasi_target(cache: &Cache) -> Result<()> {
     // We'll make a stamp file when we verify that wasm32-wasi is installed to
     // accelerate future checks. If that file exists, we're good to go.
-    let stamp = cache.root().join("wasi-target-installed");
+    //
+    // Note that we account for `$RUSTUP_TOOLCHAIN` if it exists to ensure that
+    // if you're moving across toolchains we always make sure that wasi is
+    // installed.
+    let mut stamp_name = "wasi-target-installed".to_string();
+    if let Ok(s) = std::env::var("RUSTUP_TOOLCHAIN") {
+        stamp_name.push_str(&s);
+    }
+    let stamp = cache.root().join(&stamp_name);
     if stamp.exists() {
         return Ok(());
     }
@@ -180,8 +195,9 @@ struct CargoBuild {
     // The version of `wasm-bindgen` used in this build, if any.
     wasm_bindgen: Option<String>,
     // The `*.wasm` artifacts we found during this build, in addition to the
-    // profile that they were built with.
-    wasms: Vec<(PathBuf, Profile)>,
+    // profile that they were built with and whether or not it was `fresh`
+    // during this build.
+    wasms: Vec<(PathBuf, Profile, bool)>,
 }
 
 #[derive(serde::Deserialize, Debug, Clone)]
@@ -199,6 +215,7 @@ fn execute_cargo(cargo: &mut Command) -> Result<CargoBuild> {
             filenames: Vec<String>,
             package_id: String,
             profile: Profile,
+            fresh: bool,
         },
         BuildScriptExecuted,
     }
@@ -223,6 +240,7 @@ fn execute_cargo(cargo: &mut Command) -> Result<CargoBuild> {
                 filenames,
                 profile,
                 package_id,
+                fresh,
             }) => {
                 let mut parts = package_id.split_whitespace();
                 if parts.next() == Some("wasm-bindgen") {
@@ -233,7 +251,7 @@ fn execute_cargo(cargo: &mut Command) -> Result<CargoBuild> {
                 for file in filenames {
                     let file = PathBuf::from(file);
                     if file.extension().and_then(|s| s.to_str()) == Some("wasm") {
-                        build.wasms.push((file, profile.clone()));
+                        build.wasms.push((file, profile.clone(), fresh));
                     }
                 }
             }
@@ -245,45 +263,156 @@ fn execute_cargo(cargo: &mut Command) -> Result<CargoBuild> {
     Ok(build)
 }
 
-/// Removes any `.debug_*` sections in wasm files produced during a build that
-/// shouldn't have them.
-///
-/// If debuginfo is disabled during a build then the standard library's
-/// debuginfo will still be present in the final executable. If debuginfo is
-/// disabled though this is generally wasted space, so let's remove that
-/// debuginfo.
-fn process_wasms(build: &CargoBuild) -> Result<()> {
-    for (wasm, profile) in build.wasms.iter() {
-        process_wasm(wasm, profile)
-            .with_context(|| format!("failed to process wasm at `{}`", wasm.display()))?;
-    }
-    return Ok(());
+fn process_wasm(wasm: &Path, profile: &Profile) -> Result<()> {
+    let mut module = walrus::ModuleConfig::new()
+        // If the `debuginfo` is configured then we leave in the debuginfo
+        // sections.
+        .generate_dwarf(profile.debuginfo.is_some())
+        .generate_name_section(true)
+        .strict_validate(false)
+        .parse_file(wasm)?;
 
-    fn process_wasm(wasm: &Path, profile: &Profile) -> Result<()> {
-        let mut module = walrus::ModuleConfig::new()
-            // If the `debuginfo` is configured then we leave in the debuginfo
-            // sections.
-            .generate_dwarf(profile.debuginfo.is_some())
-            .generate_name_section(true)
-            .strict_validate(false)
-            .parse_file(wasm)?;
-
-        // Demangle everything so it's got a more readable name since there's
-        // no real need to mangle the symbols in wasm.
-        for func in module.funcs.iter_mut() {
-            if let Some(name) = &mut func.name {
-                if let Ok(sym) = rustc_demangle::try_demangle(name) {
-                    *name = sym.to_string();
-                }
+    // Demangle everything so it's got a more readable name since there's
+    // no real need to mangle the symbols in wasm.
+    for func in module.funcs.iter_mut() {
+        if let Some(name) = &mut func.name {
+            if let Ok(sym) = rustc_demangle::try_demangle(name) {
+                *name = sym.to_string();
             }
         }
-
-        std::fs::write(wasm, module.emit_wasm())?;
-        Ok(())
     }
+
+    std::fs::write(wasm, module.emit_wasm())?;
+    Ok(())
 }
 
-fn run_wasm_bindgen(build: &CargoBuild, version: &str) -> Result<()> {
-    drop(build);
-    panic!("not implemented");
+fn run_wasm_bindgen(
+    wasm: &Path,
+    profile: &Profile,
+    bindgen_version: &str,
+    cache: &Cache,
+) -> Result<()> {
+    let tempdir = tempfile::TempDir::new().context("failed to create temporary directory")?;
+    let cache_wasm_bindgen = cache
+        .root()
+        .join("wasm-bindgen")
+        .join(bindgen_version)
+        .join("wasm-bindgen")
+        .with_extension(std::env::consts::EXE_EXTENSION);
+
+    let wasm_bindgen = std::env::var_os("WASM_BINDGEN").unwrap_or(cache_wasm_bindgen.clone().into());
+
+    let mut cmd = Command::new(&wasm_bindgen);
+    cmd.arg(wasm);
+    if profile.debuginfo.is_some() {
+        cmd.arg("--keep-debug");
+    }
+    cmd.arg("--out-dir").arg(tempdir.path());
+    cmd.arg("--out-name").arg("foo");
+    cmd.env("WASM_INTERFACE_TYPES", "1");
+
+    if let Err(e) = cmd.run() {
+        let any_not_found = e.chain().any(|e| {
+            if let Some(err) = e.downcast_ref::<io::Error>() {
+                return err.kind() == io::ErrorKind::NotFound;
+            }
+            false
+        });
+        if any_not_found && wasm_bindgen == cache_wasm_bindgen {
+            install_wasm_bindgen(bindgen_version, wasm_bindgen.as_ref())?;
+            cmd.run()?;
+        } else {
+            return Err(e);
+        }
+    }
+
+    fs::copy(tempdir.path().join("foo.wasm"), wasm)?;
+
+    Ok(())
+}
+
+fn install_wasm_bindgen(version: &str, path: &Path) -> Result<()> {
+    let parent = path.parent().unwrap();
+    let filename = path.file_name().unwrap();
+    fs::create_dir_all(parent)
+        .context(format!("failed to create directory `{}`", parent.display()))?;
+
+    // Looks for `wasm-bindgen` in the compressed tarball that `response` has
+    // and places it in `path`.
+    let extract = |response: reqwest::Response| -> Result<()> {
+        let decompressed = flate2::read::GzDecoder::new(response);
+        let mut tar = tar::Archive::new(decompressed);
+        for entry in tar.entries()? {
+            let mut entry = entry?;
+            if !entry.path()?.ends_with(filename) {
+                continue;
+            }
+            entry.unpack(path)?;
+            return Ok(());
+        }
+
+        bail!("failed to find {:?} in archive", filename);
+    };
+
+    // Downloads a precompiled tarball for `target` and places it in `path`.
+    let download_precompiled = |target: &str| {
+        let mut url = "https://github.com/rustwasm/wasm-bindgen/releases/download/".to_string();
+        url.push_str(version);
+        url.push_str("/wasm-bindgen-");
+        url.push_str(version);
+        url.push_str("-");
+        url.push_str(target);
+        url.push_str(".tar.gz");
+
+        status("Downloading", &format!("precompiled wasm-bindgen v{}", version));
+
+        let response = reqwest::get(&url).context(format!("failed to fetch {}", url))?;
+        if !response.status().is_success() {
+            bail!(
+                "failed to get successful response from {}: {}",
+                url,
+                response.status()
+            );
+        }
+        extract(response).context(format!("failed to extract tarball from {}", url))
+    };
+
+    // First check for precompiled artifacts
+    if cfg!(target_os = "linux") && cfg!(target_arch = "x86_64") {
+        return download_precompiled("x86_64-unknown-linux-musl");
+    } else if cfg!(target_os = "macos") && cfg!(target_arch = "x86_64") {
+        return download_precompiled("x86_64-apple-darwin");
+    } else if cfg!(target_os = "windows") && cfg!(target_arch = "x86_64") {
+        return download_precompiled("x86_64-pc-windows-msvc");
+    }
+
+    // ... otherwise fall back to `cargo install`. Note that we modify `PATH`
+    // here to suppress the warning that cargo emits about adding it to PATH.
+    status("Installing", &format!("wasm-bindgen v{}", version));
+    let path = std::env::var_os("PATH").unwrap_or_default();
+    let mut path = std::env::split_paths(&path).collect::<Vec<_>>();
+    path.push(parent.join("bin"));
+    let path = std::env::join_paths(&path)?;
+    Command::new("cargo")
+        .arg("install")
+        .arg("wasm-bindgen-cli")
+        .arg("--version")
+        .arg(format!("={}", version))
+        .arg("--root")
+        .arg(parent)
+        .arg("--bin")
+        .arg("wasm-bindgen")
+        .env("PATH", &path)
+        .run()?;
+
+    fs::rename(parent.join("bin").join(filename), parent.join(filename))?;
+    Ok(())
+}
+
+fn status(name: &str, rest: &str) {
+    let mut shell = StandardStream::stderr(ColorChoice::Auto);
+    drop(shell.set_color(ColorSpec::new().set_fg(Some(Color::Green)).set_bold(true)));
+    eprint!("{:>12}", name);
+    drop(shell.reset());
+    eprintln!(" {}", rest);
 }
