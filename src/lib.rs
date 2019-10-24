@@ -416,9 +416,9 @@ fn run_wasm_bindgen(
         || install_wasm_bindgen(bindgen_version, wasm_bindgen.as_ref(), config),
     )?;
 
-    let bytes = fs::read(tempdir.path().join("foo.wasm"))?;
-    run_wasm_opt(wasm, &bytes, profile, config)?;
-
+    // note that we explicitly don't run `wasm-opt` right now since that will
+    // interfere with the current interface-types implementation
+    fs::copy(tempdir.path().join("foo.wasm"), wasm)?;
     Ok(())
 }
 
