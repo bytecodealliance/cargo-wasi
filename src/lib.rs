@@ -358,7 +358,7 @@ fn process_wasm(wasm: &Path, temp: &Path, profile: &Profile, config: &Config) ->
         }
     }
 
-    std::fs::write(wasm, module.emit_wasm())?;
+    run_wasm_opt(wasm, &module.emit_wasm(), profile, config)?;
     Ok(())
 }
 
@@ -375,7 +375,8 @@ fn run_wasm_bindgen(
     bindgen_version: &str,
     config: &Config,
 ) -> Result<()> {
-    let tempdir = tempfile::TempDir::new().context("failed to create temporary directory")?;
+    let tempdir = tempfile::TempDir::new_in(wasm.parent().unwrap())
+        .context("failed to create temporary directory")?;
     let cache_wasm_bindgen = config
         .cache()
         .root()
@@ -383,8 +384,7 @@ fn run_wasm_bindgen(
         .join(bindgen_version)
         .join("wasm-bindgen")
         .with_extension(env::consts::EXE_EXTENSION);
-
-    let wasm_bindgen = env::var_os("WASM_BINDGEN").unwrap_or(cache_wasm_bindgen.clone().into());
+    let wasm_bindgen = get_tool(config, "WASM_BINDGEN", &cache_wasm_bindgen);
 
     let mut cmd = Command::new(&wasm_bindgen);
     cmd.arg(temp);
@@ -395,34 +395,16 @@ fn run_wasm_bindgen(
     cmd.arg("--out-name").arg("foo");
     cmd.env("WASM_INTERFACE_TYPES", "1");
 
-    config.verbose(|| {
-        if Path::new(&wasm_bindgen).exists() {
-            config.status("Running", &format!("{:?}", cmd));
-        }
-    });
+    run_or_download(
+        wasm_bindgen.as_ref(),
+        &cache_wasm_bindgen,
+        &mut cmd,
+        config,
+        || install_wasm_bindgen(bindgen_version, wasm_bindgen.as_ref(), config),
+    )?;
 
-    // Try executing first, and if that fails due to process not found *and*
-    // we're using a cached version, then we try to install wasm-bindgen and
-    // then rerun the command.
-    if let Err(e) = cmd.run() {
-        let any_not_found = e.chain().any(|e| {
-            if let Some(err) = e.downcast_ref::<io::Error>() {
-                return err.kind() == io::ErrorKind::NotFound;
-            }
-            false
-        });
-        if any_not_found && wasm_bindgen == cache_wasm_bindgen {
-            install_wasm_bindgen(bindgen_version, wasm_bindgen.as_ref(), config)?;
-            config.verbose(|| {
-                config.status("Running", &format!("{:?}", cmd));
-            });
-            cmd.run()?;
-        } else {
-            return Err(e);
-        }
-    }
-
-    fs::copy(tempdir.path().join("foo.wasm"), wasm)?;
+    let bytes = fs::read(tempdir.path().join("foo.wasm"))?;
+    run_wasm_opt(wasm, &bytes, profile, config)?;
 
     Ok(())
 }
@@ -431,28 +413,6 @@ fn run_wasm_bindgen(
 ///
 /// This will download from the network or do a very long compile locally.
 fn install_wasm_bindgen(version: &str, path: &Path, config: &Config) -> Result<()> {
-    let parent = path.parent().unwrap();
-    let filename = path.file_name().unwrap();
-    fs::create_dir_all(parent)
-        .context(format!("failed to create directory `{}`", parent.display()))?;
-
-    // Looks for `wasm-bindgen` in the compressed tarball that `response` has
-    // and places it in `path`.
-    let extract = |response: reqwest::Response| -> Result<()> {
-        let decompressed = flate2::read::GzDecoder::new(response);
-        let mut tar = tar::Archive::new(decompressed);
-        for entry in tar.entries()? {
-            let mut entry = entry?;
-            if !entry.path()?.ends_with(filename) {
-                continue;
-            }
-            entry.unpack(path)?;
-            return Ok(());
-        }
-
-        bail!("failed to find {:?} in archive", filename);
-    };
-
     // Downloads a precompiled tarball for `target` and places it in `path`.
     let download_precompiled = |target: &str| {
         let mut url = "https://github.com/rustwasm/wasm-bindgen/releases/download/".to_string();
@@ -462,24 +422,12 @@ fn install_wasm_bindgen(version: &str, path: &Path, config: &Config) -> Result<(
         url.push_str("-");
         url.push_str(target);
         url.push_str(".tar.gz");
-
-        config.status(
-            "Downloading",
+        download(
+            &url,
             &format!("precompiled wasm-bindgen v{}", version),
-        );
-        config.verbose(|| {
-            config.status("Get", &url);
-        });
-
-        let response = reqwest::get(&url).context(format!("failed to fetch {}", url))?;
-        if !response.status().is_success() {
-            bail!(
-                "failed to get successful response from {}: {}",
-                url,
-                response.status()
-            );
-        }
-        extract(response).context(format!("failed to extract tarball from {}", url))
+            path,
+            config,
+        )
     };
 
     // First check for precompiled artifacts
@@ -493,6 +441,8 @@ fn install_wasm_bindgen(version: &str, path: &Path, config: &Config) -> Result<(
 
     // ... otherwise fall back to `cargo install`. Note that we modify `PATH`
     // here to suppress the warning that cargo emits about adding it to PATH.
+    let parent = path.parent().unwrap();
+    let filename = path.file_name().unwrap();
     config.status("Installing", &format!("wasm-bindgen v{}", version));
     let path = env::var_os("PATH").unwrap_or_default();
     let mut path = env::split_paths(&path).collect::<Vec<_>>();
@@ -512,4 +462,174 @@ fn install_wasm_bindgen(version: &str, path: &Path, config: &Config) -> Result<(
 
     fs::rename(parent.join("bin").join(filename), parent.join(filename))?;
     Ok(())
+}
+
+fn run_wasm_opt(wasm: &Path, bytes: &[u8], profile: &Profile, config: &Config) -> Result<()> {
+    // If debuginfo is enabled, automatically disable `wasm-opt`. It will mess
+    // up dwarf debug information currently, so we can't run it.
+    //
+    // Additionally if no optimizations are enabled, no need to run `wasm-opt`,
+    // we're not optimizing.
+    if profile.debuginfo.is_some() || profile.opt_level == "0" {
+        fs::write(wasm, bytes)?;
+        return Ok(());
+    }
+
+    config.status("Optimizing", "with wasm-opt");
+    let tempdir = tempfile::TempDir::new_in(wasm.parent().unwrap())
+        .context("failed to create temporary directory")?;
+    let cached_wasm_opt = config
+        .cache()
+        .root()
+        .join("wasm-opt")
+        .with_extension(env::consts::EXE_EXTENSION);
+    let wasm_opt = get_tool(config, "WASM_OPT", &cached_wasm_opt);
+
+    let input = tempdir.path().join("input.wasm");
+    fs::write(&input, &bytes)?;
+    let mut cmd = Command::new(&wasm_opt);
+    cmd.arg(&input);
+    cmd.arg(format!("-O{}", profile.opt_level));
+    cmd.arg("-o").arg(wasm);
+
+    run_or_download(
+        wasm_opt.as_ref(),
+        cached_wasm_opt.as_ref(),
+        &mut cmd,
+        config,
+        || install_wasm_opt(wasm_opt.as_ref(), config),
+    )?;
+    Ok(())
+}
+
+/// Attempts to execute `cmd` which is executing `requested`.
+///
+/// If the execution fails because `requested` isn't found *and* `requested` is
+/// the same as the `cache` path provided, then `download` is invoked to
+/// download the tool and then we re-execute `cmd` after the download has
+/// finished.
+///
+/// Additionally nice diagnostics and such are printed along the way.
+fn run_or_download(
+    requested: &Path,
+    cache: &Path,
+    cmd: &mut Command,
+    config: &Config,
+    download: impl FnOnce() -> Result<()>,
+) -> Result<()> {
+    // NB: this is explicitly set up so that, by default, we simply execute the
+    // command and assume that it exists. That should ideally avoid a few extra
+    // syscalls to detect "will things work?"
+    config.verbose(|| {
+        if requested.exists() {
+            config.status("Running", &format!("{:?}", cmd));
+        }
+    });
+
+    let err = match cmd.run() {
+        Ok(()) => return Ok(()),
+        Err(e) => e,
+    };
+    let any_not_found = err.chain().any(|e| {
+        if let Some(err) = e.downcast_ref::<io::Error>() {
+            return err.kind() == io::ErrorKind::NotFound;
+        }
+        false
+    });
+
+    // This may have failed for some reason other than `NotFound`, in which case
+    // it's a legitimate error. Additionally `requested` may not actually be a
+    // path that we download, in which case there's also nothing that we can do.
+    if !any_not_found || requested != cache {
+        return Err(err);
+    }
+
+    download()?;
+    config.verbose(|| {
+        config.status("Running", &format!("{:?}", cmd));
+    });
+    cmd.run()
+}
+
+/// Returns the path to execute a tool, either governed by the `env` if it's set
+/// or the `cache` as the fallback.
+///
+/// Takes a `Config` for future compatibility (maybe)
+fn get_tool(_config: &Config, env: &str, cache: &Path) -> PathBuf {
+    if let Some(s) = std::env::var_os(env) {
+        return s.into();
+    }
+    return cache.to_path_buf();
+}
+
+fn install_wasm_opt(path: &Path, config: &Config) -> Result<()> {
+    let tag = "version_89";
+    let target = if cfg!(target_os = "linux") && cfg!(target_arch = "x86_64") {
+        "x86_64-linux"
+    } else if cfg!(target_os = "macos") && cfg!(target_arch = "x86_64") {
+        "x86_64-apple-darwin"
+    } else if cfg!(target_os = "windows") && cfg!(target_arch = "x86_64") {
+        "x86_64-windows"
+    } else {
+        bail!(
+            "no precompiled binaries of `wasm-opt` are available for this \
+             platform, you'll want to set `$WASM_OPT` to a preinstalled \
+             `wasm-opt` command or disable via `wasm-opt = false` in \
+             your manifest"
+        )
+    };
+
+    let mut url = "https://github.com/WebAssembly/binaryen/releases/download/".to_string();
+    url.push_str(tag);
+    url.push_str("/binaryen-");
+    url.push_str(tag);
+    url.push_str("-");
+    url.push_str(target);
+    url.push_str(".tar.gz");
+
+    download(&url, &format!("precompiled wasm-opt {}", tag), path, config)
+}
+
+fn download(url: &str, name: &str, path: &Path, config: &Config) -> Result<()> {
+    // Globally lock ourselves downloading things to coordinate with any other
+    // instances of `cargo-wasi` doing a download. This is a bit coarse, but it
+    // gets the job done. Additionally if someone else does the download for us
+    // then we can simply return.
+    let _flock = utils::flock(&config.cache().root().join("downloading"));
+    if path.exists() {
+        return Ok(());
+    }
+
+    // Ok, let's actually do the download
+    let parent = path.parent().unwrap();
+    let filename = path.file_name().unwrap();
+    config.status("Downloading", name);
+    config.verbose(|| config.status("Get", &url));
+
+    let response = reqwest::get(url).context(format!("failed to fetch {}", url))?;
+    if !response.status().is_success() {
+        bail!(
+            "failed to get successful response from {}: {}",
+            url,
+            response.status()
+        );
+    }
+    (|| -> Result<()> {
+        fs::create_dir_all(parent)
+            .context(format!("failed to create directory `{}`", parent.display()))?;
+
+        let decompressed = flate2::read::GzDecoder::new(response);
+        let mut tar = tar::Archive::new(decompressed);
+        for entry in tar.entries()? {
+            let mut entry = entry?;
+            if !entry.path()?.ends_with(filename) {
+                continue;
+            }
+            entry.unpack(path)?;
+            return Ok(());
+        }
+
+        bail!("failed to find {:?} in archive", filename);
+    })()
+    .context(format!("failed to extract tarball from {}", url))
 }
