@@ -108,11 +108,18 @@ fn rmain(config: &mut Config) -> Result<()> {
     match subcommand {
         Subcommand::Run | Subcommand::Bench | Subcommand::Test => {
             if which::which("wasmtime").is_err() {
-                bail!(
+                let mut msg = format!(
                     "failed to find `wasmtime` in $PATH, you'll want to \
-                     install `wasmtime` before running this command by \
-                     visiting https://wasmtime.dev/"
+                     install `wasmtime` before running this command\n"
                 );
+                if cfg!(unix) {
+                    msg.push_str("you can also install through a shell:\n\n");
+                    msg.push_str("\tcurl https://wasmtime.dev/install.sh -sSf | bash\n");
+                } else {
+                    msg.push_str("you can also install through the installer:\n\n");
+                    msg.push_str("\thttps://github.com/CraneStation/wasmtime/releases/download/dev/wasmtime-dev-x86_64-windows.msi\n");
+                }
+                bail!("{}", msg);
             }
             cargo.env("__CARGO_WASI_RUNNER_SHIM", "1");
             cargo.env("CARGO_TARGET_WASM32_WASI_RUNNER", env::current_exe()?);
