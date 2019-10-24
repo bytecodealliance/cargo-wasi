@@ -87,7 +87,7 @@ jobs:
       if: matrix.os == 'ubuntu-latest'
 
     # Build our actual binary
-    - run: cargo build --release --target ${{ matrix.target }}
+    - run: cargo build --release --target ${{ matrix.target }} --features default-tls-vendored
 
     # Plop the binary plus a `*.crate` file for the corresponding
     # target-specific package in `tmp` and upload the artifact.
