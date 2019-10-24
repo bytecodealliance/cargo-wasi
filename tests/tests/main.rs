@@ -276,7 +276,7 @@ $",
 .*Finished release .*
 .*Processing .*foo.rustc.wasm
 .*Optimizing with wasm-opt
-.*Running \".*wasm-opt .*
+.*Running \".*wasm-opt.*
 $",
         )?)
         .success();
@@ -546,6 +546,7 @@ fn test_flags() -> Result<()> {
 }
 
 #[test]
+#[cfg_attr(windows, ignore)] // FIXME: when wasmtime fixes its traps here run this test
 fn run_panic() -> Result<()> {
     support::project()
         .file(
@@ -565,7 +566,7 @@ fn run_panic() -> Result<()> {
 .*Finished dev .*
 .*Running .*
 .*Running `.*`
-thread 'main' panicked at 'test', src/main.rs.*
+thread 'main' panicked at 'test', src.main.rs.*
 note: run with `RUST_BACKTRACE=1` .*
 error: failed to process main module `.*`
     caused by: Instantiation error: .*
