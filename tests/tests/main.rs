@@ -114,3 +114,50 @@ fn fix_works() {
 
     p.cargo_wasi("fix --allow-no-vcs").assert().success();
 }
+
+#[test]
+fn rust_names_demangled() -> Result<()> {
+    let p = support::project()
+        .file("src/main.rs", "fn main() {}")
+        .build();
+
+    p.cargo_wasi("build").assert().success();
+    let bytes = std::fs::read(p.debug_wasm("foo")).context("failed to read wasm")?;
+    assert_demangled(&bytes)?;
+
+    p.cargo_wasi("build --release").assert().success();
+    let bytes = std::fs::read(p.release_wasm("foo")).context("failed to read wasm")?;
+    assert_demangled(&bytes)?;
+    Ok(())
+}
+
+fn assert_demangled(wasm: &[u8]) -> Result<()> {
+    let mut parser = wasmparser::ModuleReader::new(&wasm)?;
+    let mut saw_name = false;
+    while !parser.eof() {
+        let section = parser.read()?;
+        match section.code {
+            wasmparser::SectionCode::Custom { name: "name", .. } => {}
+            _ => continue,
+        }
+        saw_name = true;
+
+        let mut reader = section.get_name_section_reader()?;
+        while !reader.eof() {
+            let functions = match reader.read()? {
+                wasmparser::Name::Module(_) => continue,
+                wasmparser::Name::Function(f) => f,
+                wasmparser::Name::Local(_) => continue,
+            };
+            let mut map = functions.get_map()?;
+            for _ in 0..map.get_count() {
+                let name = map.read()?;
+                if name.name.contains("ZN") {
+                    panic!("still-mangled name {:?}", name.name);
+                }
+            }
+        }
+    }
+    assert!(saw_name);
+    Ok(())
+}

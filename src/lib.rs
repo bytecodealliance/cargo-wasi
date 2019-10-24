@@ -6,7 +6,6 @@ use std::io::Read;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
-use wasmparser::{ModuleReader, SectionCode};
 
 mod cache;
 mod utils;
@@ -99,7 +98,10 @@ fn rmain() -> Result<()> {
         cargo.arg(arg);
     }
     let build = execute_cargo(&mut cargo)?;
-    remove_debuginfo(&build)?;
+    match &build.wasm_bindgen {
+        Some(version) => run_wasm_bindgen(&build, version)?,
+        None => process_wasms(&build)?,
+    }
 
     Ok(())
 }
@@ -250,38 +252,38 @@ fn execute_cargo(cargo: &mut Command) -> Result<CargoBuild> {
 /// debuginfo will still be present in the final executable. If debuginfo is
 /// disabled though this is generally wasted space, so let's remove that
 /// debuginfo.
-fn remove_debuginfo(build: &CargoBuild) -> Result<()> {
+fn process_wasms(build: &CargoBuild) -> Result<()> {
     for (wasm, profile) in build.wasms.iter() {
-        // If the `debuginfo` is configured then we leave in the debuginfo
-        // sections.
-        if profile.debuginfo.is_some() {
-            continue;
-        }
-        remove_debuginfo(&wasm)
-            .with_context(|| format!("failed to remove debuginfo from `{}`", wasm.display()))?;
+        process_wasm(wasm, profile)
+            .with_context(|| format!("failed to process wasm at `{}`", wasm.display()))?;
     }
     return Ok(());
 
-    fn remove_debuginfo(path: &Path) -> Result<()> {
-        let mut ranges = Vec::new();
-        let mut bytes = std::fs::read(path)?;
-        let mut reader = ModuleReader::new(&bytes)?;
-        while !reader.eof() {
-            let start = reader.current_position();
-            let section = reader.read()?;
-            let name = match section.code {
-                SectionCode::Custom { name, .. } => name,
-                _ => continue,
-            };
-            if !name.starts_with(".debug") {
-                continue;
+    fn process_wasm(wasm: &Path, profile: &Profile) -> Result<()> {
+        let mut module = walrus::ModuleConfig::new()
+            // If the `debuginfo` is configured then we leave in the debuginfo
+            // sections.
+            .generate_dwarf(profile.debuginfo.is_some())
+            .generate_name_section(true)
+            .strict_validate(false)
+            .parse_file(wasm)?;
+
+        // Demangle everything so it's got a more readable name since there's
+        // no real need to mangle the symbols in wasm.
+        for func in module.funcs.iter_mut() {
+            if let Some(name) = &mut func.name {
+                if let Ok(sym) = rustc_demangle::try_demangle(name) {
+                    *name = sym.to_string();
+                }
             }
-            ranges.push((start, section.range().end));
         }
-        for (start, end) in ranges.into_iter().rev() {
-            bytes.drain(start..end);
-        }
-        std::fs::write(path, bytes)?;
+
+        std::fs::write(wasm, module.emit_wasm())?;
         Ok(())
     }
+}
+
+fn run_wasm_bindgen(build: &CargoBuild, version: &str) -> Result<()> {
+    drop(build);
+    panic!("not implemented");
 }
