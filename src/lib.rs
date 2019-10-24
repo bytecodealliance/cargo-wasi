@@ -207,6 +207,8 @@ fn install_wasi_target(config: &Config) -> Result<()> {
     if stamp.exists() {
         return Ok(());
     }
+    fs::create_dir_all(config.cache().root())
+        .context("failed to create cache dir")?;
 
     // Ok we need to actually check since this is perhaps the first time we've
     // ever checked. Let's ask rustc what its sysroot is and see if it has a

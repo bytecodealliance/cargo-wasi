@@ -1,5 +1,4 @@
-use anyhow::{bail, Context, Result};
-use std::fs;
+use anyhow::{bail, Result};
 use std::path::{Path, PathBuf};
 
 pub struct Cache {
@@ -16,8 +15,6 @@ impl Cache {
             },
         };
         let root = all_versions_root.join(env!("CARGO_PKG_VERSION"));
-        fs::create_dir_all(&root)
-            .with_context(|| format!("failed to create cache directory: {}", root.display()))?;
         Ok(Cache { root })
     }
 
