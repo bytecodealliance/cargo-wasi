@@ -32,7 +32,7 @@ jobs:
     - uses: actions/checkout@master
     - name: Install Rust
       run: rustup update beta && rustup update stable && rustup default beta
-    - run: cargo install --debug
+    - run: cargo install --debug --path .
 
     # Verify that we can switch between channels (stable/beta) and we'll
     # automatically get the wasi target on both.
