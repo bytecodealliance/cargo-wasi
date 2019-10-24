@@ -333,7 +333,9 @@ fn run_wasm_bindgen(
     cmd.env("WASM_INTERFACE_TYPES", "1");
 
     config.verbose(|| {
-        config.status("Running", &format!("{:?}", cmd));
+        if Path::new(&wasm_bindgen).exists() {
+            config.status("Running", &format!("{:?}", cmd));
+        }
     });
 
     // Try executing first, and if that fails due to process not found *and*
@@ -348,6 +350,9 @@ fn run_wasm_bindgen(
         });
         if any_not_found && wasm_bindgen == cache_wasm_bindgen {
             install_wasm_bindgen(bindgen_version, wasm_bindgen.as_ref(), config)?;
+            config.verbose(|| {
+                config.status("Running", &format!("{:?}", cmd));
+            });
             cmd.run()?;
         } else {
             return Err(e);

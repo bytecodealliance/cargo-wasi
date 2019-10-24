@@ -346,7 +346,6 @@ fn wasm_bindgen() -> Result<()> {
 .*Compiling foo v1.0.0 .*
 .*Running `rustc.*`
 .*Finished dev .*
-.*Running \"my-wasm-bindgen\".*
 error: failed to process wasm at `.*foo.wasm`
 
 Caused by:
