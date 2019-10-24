@@ -623,3 +623,61 @@ fn custom_sections(bytes: &[u8]) -> Result<Vec<&str>> {
     }
     Ok(sections)
 }
+
+#[test]
+fn release_skip_wasm_opt() -> Result<()> {
+    let p = support::project()
+        .file(
+            "Cargo.toml",
+            r#"
+                [package]
+                name = "foo"
+                version = "1.0.0"
+
+                [package.metadata]
+                wasm-opt = false
+            "#,
+        )
+        .file("src/main.rs", "fn main() {}")
+        .build();
+
+    p.cargo_wasi("build --release")
+        .assert()
+        .stderr(is_match(
+            "^\
+.*Compiling foo v1.0.0 .*
+.*Finished release .*
+$",
+        )?)
+        .success();
+    Ok(())
+}
+
+#[test]
+fn skip_wasm_opt_if_debug() -> Result<()> {
+    let p = support::project()
+        .file(
+            "Cargo.toml",
+            r#"
+                [package]
+                name = "foo"
+                version = "1.0.0"
+
+                [profile.release]
+                debug = 1
+            "#,
+        )
+        .file("src/main.rs", "fn main() {}")
+        .build();
+
+    p.cargo_wasi("build --release")
+        .assert()
+        .stderr(is_match(
+            "^\
+.*Compiling foo v1.0.0 .*
+.*Finished release .*
+$",
+        )?)
+        .success();
+    Ok(())
+}
