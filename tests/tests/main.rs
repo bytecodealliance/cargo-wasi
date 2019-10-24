@@ -452,7 +452,7 @@ fn run_forward_args() -> Result<()> {
             "#,
         )
         .build()
-        .cargo_wasi("run a -- -b c")
+        .cargo_wasi("run a -b c")
         .assert()
         .stdout("[\"a\", \"-b\", \"c\"]\n")
         .success();
@@ -542,5 +542,33 @@ fn test_flags() -> Result<()> {
         .cargo_wasi("test -- --nocapture")
         .assert()
         .success();
+    Ok(())
+}
+
+#[test]
+fn run_panic() -> Result<()> {
+    support::project()
+        .file(
+            "src/main.rs",
+            r#"
+                fn main() {
+                    panic!("test");
+                }
+            "#,
+        )
+        .build()
+        .cargo_wasi("run")
+        .assert()
+        .stderr(is_match(
+            "^\
+.*Compiling foo v1.0.0 .*
+.*Finished dev .*
+.*Running .*
+.*Running `.*`
+thread 'main' panicked at 'test', src/main.rs.*
+note: run with `RUST_BACKTRACE=1` .*
+$",
+        )?)
+        .code(1);
     Ok(())
 }
