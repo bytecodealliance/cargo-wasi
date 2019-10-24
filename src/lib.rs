@@ -3,7 +3,7 @@ use crate::config::Config;
 use crate::utils::CommandExt;
 use anyhow::{bail, Context, Result};
 use std::env;
-use std::fs::{self, File};
+use std::fs;
 use std::io::{self, Read};
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
@@ -215,52 +215,44 @@ fn install_wasi_target(config: &Config) -> Result<()> {
     // Note that we account for `$RUSTUP_TOOLCHAIN` if it exists to ensure that
     // if you're moving across toolchains we always make sure that wasi is
     // installed.
-    let mut stamp_name = "wasi-target-installed".to_string();
-    if let Ok(s) = env::var("RUSTUP_TOOLCHAIN") {
-        stamp_name.push_str(&s);
-    }
-    let stamp = config.cache().root().join(&stamp_name);
-    if stamp.exists() {
-        return Ok(());
-    }
-    fs::create_dir_all(config.cache().root()).context("failed to create cache dir")?;
+    let stamp_name = "wasi-target-installed".to_string()
+        + &env::var("RUSTUP_TOOLCHAIN").unwrap_or("".to_string());
+    config.cache().stamp(stamp_name).ensure(|| {
+        // Ok we need to actually check since this is perhaps the first time we've
+        // ever checked. Let's ask rustc what its sysroot is and see if it has a
+        // wasm32-wasi folder.
+        let sysroot = Command::new("rustc")
+            .arg("--print")
+            .arg("sysroot")
+            .capture_stdout()?;
+        let sysroot = Path::new(sysroot.trim());
+        if sysroot.join("lib/rustlib/wasm32-wasi").exists() {
+            return Ok(());
+        }
 
-    // Ok we need to actually check since this is perhaps the first time we've
-    // ever checked. Let's ask rustc what its sysroot is and see if it has a
-    // wasm32-wasi folder.
-    let sysroot = Command::new("rustc")
-        .arg("--print")
-        .arg("sysroot")
-        .capture_stdout()?;
-    let sysroot = Path::new(sysroot.trim());
-    if sysroot.join("lib/rustlib/wasm32-wasi").exists() {
-        File::create(&stamp).context("failed to create stamp file")?;
-        return Ok(());
-    }
+        // ... and that doesn't exist, so we need to install it! If we're not a
+        // rustup toolchain then someone else has to figure out how to install the
+        // wasi target, otherwise we delegate to rustup.
+        if env::var_os("RUSTUP_TOOLCHAIN").is_none() {
+            bail!(
+                "failed to find the `wasm32-wasi` target installed, and rustup \
+                 is also not detected, you'll need to be sure to install the \
+                 `wasm32-wasi` target before using this command"
+            );
+        }
 
-    // ... and that doesn't exist, so we need to install it! If we're not a
-    // rustup toolchain then someone else has to figure out how to install the
-    // wasi target, otherwise we delegate to rustup.
-    if env::var_os("RUSTUP_TOOLCHAIN").is_none() {
-        bail!(
-            "failed to find the `wasm32-wasi` target installed, and rustup \
-             is also not detected, you'll need to be sure to install the \
-             `wasm32-wasi` target before using this command"
-        );
-    }
+        // rustup is not itself synchronized across processes so at least attempt to
+        // synchronize our own calls. This may not work and if it doesn't we tried,
+        // this is largely opportunistic anyway.
+        let _lock = utils::flock(&config.cache().root().join("rustup-lock"));
 
-    // rustup is not itself synchronized across processes so at least attempt to
-    // synchronize our own calls. This may not work and if it doesn't we tried,
-    // this is largely opportunistic anyway.
-    let _lock = utils::flock(&config.cache().root().join("rustup-lock"));
-
-    Command::new("rustup")
-        .arg("target")
-        .arg("add")
-        .arg("wasm32-wasi")
-        .run()?;
-    File::create(&stamp).context("failed to create stamp file")?;
-    Ok(())
+        Command::new("rustup")
+            .arg("target")
+            .arg("add")
+            .arg("wasm32-wasi")
+            .run()?;
+        Ok(())
+    })
 }
 
 #[derive(Default, Debug)]
