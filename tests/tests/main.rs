@@ -527,3 +527,20 @@ fn run_one() -> Result<()> {
         .code(0);
     Ok(())
 }
+
+#[test]
+fn test_flags() -> Result<()> {
+    support::project()
+        .file(
+            "src/lib.rs",
+            r#"
+                #[test]
+                fn smoke() {}
+            "#,
+        )
+        .build()
+        .cargo_wasi("test -- --nocapture")
+        .assert()
+        .success();
+    Ok(())
+}

@@ -169,7 +169,7 @@ fn rmain(config: &mut Config) -> Result<()> {
 
     for run in build.runs.iter() {
         config.status("Running", &format!("`{}`", run.join(" ")));
-        Command::new("wasmtime").args(run.iter()).run()?;
+        Command::new("wasmtime").arg("--").args(run.iter()).run()?;
     }
 
     Ok(())
