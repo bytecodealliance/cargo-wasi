@@ -33,7 +33,7 @@ jobs:
     - name: Install Rust
       run: rustup update beta && rustup default beta
     - run: cargo install --debug
-    - run: (cd examples/markdown && cargo wasi build --release)
+    - run: (cd examples/markdown && cargo wasi build --release -v)
 
   build:
     name: Build
