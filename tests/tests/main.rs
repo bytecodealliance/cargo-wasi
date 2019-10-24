@@ -96,3 +96,12 @@ fn strip_debuginfo() -> Result<()> {
     }
     Ok(())
 }
+
+#[test]
+fn check_works() {
+    let p = support::project()
+        .file("src/main.rs", "fn main() {}")
+        .build();
+
+    p.cargo_wasi("check").assert().success();
+}
