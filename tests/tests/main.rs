@@ -240,7 +240,7 @@ fn check_output_release() -> Result<()> {
     support::project()
         .file("src/main.rs", "fn main() {}")
         .build()
-        .cargo_wasi("check")
+        .cargo_wasi("build --release")
         .assert()
         .success();
 
