@@ -255,6 +255,7 @@ fn check_output_release() -> Result<()> {
             "^\
 .*Compiling foo v1.0.0 .*
 .*Finished release .*
+.*Optimizing with wasm-opt
 $",
         )?)
         .success();
@@ -274,6 +275,8 @@ $",
 .*Running `rustc.*`
 .*Finished release .*
 .*Processing .*foo.rustc.wasm
+.*Optimizing with wasm-opt
+.*Running \".*wasm-opt\" .*
 $",
         )?)
         .success();

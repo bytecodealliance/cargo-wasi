@@ -492,6 +492,10 @@ fn run_wasm_opt(wasm: &Path, bytes: &[u8], profile: &Profile, config: &Config) -
     cmd.arg(format!("-O{}", profile.opt_level));
     cmd.arg("-o").arg(wasm);
 
+    // for now always enable the name section, should make this conditional
+    // though!
+    cmd.arg("--debuginfo");
+
     run_or_download(
         wasm_opt.as_ref(),
         cached_wasm_opt.as_ref(),
