@@ -81,6 +81,11 @@ jobs:
       run: echo ::set-env name=RUSTFLAGS::-Ctarget-feature=+crt-static
       if: matrix.os == 'windows-latest'
 
+    # Install a musl toolchain if we're on Linux
+    - name: Install musl-gcc
+      run: sudo apt update -y && sudo apt install -y musl-tools
+      if: matrix.os == 'ubuntu-latest'
+
     # Build our actual binary
     - run: cargo build --release --target ${{ matrix.target }}
 
