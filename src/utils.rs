@@ -94,7 +94,7 @@ pub fn hide_normal_process_exit(error: Error, config: &Config) -> Error {
         Err(e) => return e,
     };
     if let Some(code) = error.status.code() {
-        if code < 128 && error.stdout.is_empty() && error.stderr.is_empty() {
+        if 0 <= code && code < 128 && error.stdout.is_empty() && error.stderr.is_empty() {
             error.hidden = true;
         }
     }

@@ -38,6 +38,7 @@ serde_json = "1"
 tar = "0.4"
 tempfile = "3"
 termcolor = "1.0.5"
+toml = "0.5"
 walrus = "0.12"
 which = "3.0"
 

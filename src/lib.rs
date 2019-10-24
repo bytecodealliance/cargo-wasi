@@ -153,10 +153,15 @@ fn rmain(config: &mut Config) -> Result<()> {
             // automatically execute the `wasm-bindgen` CLI, otherwise just process
             // using normal `walrus` commands.
             let result = match &build.wasm_bindgen {
-                Some(version) => {
-                    run_wasm_bindgen(&temporary_wasi, &temporary_rustc, profile, version, &config)
-                }
-                None => process_wasm(&temporary_wasi, &temporary_rustc, profile, &config),
+                Some(version) => run_wasm_bindgen(
+                    &temporary_wasi,
+                    &temporary_rustc,
+                    profile,
+                    version,
+                    &build,
+                    &config,
+                ),
+                None => process_wasm(&temporary_wasi, &temporary_rustc, profile, &build, &config),
             };
             result.with_context(|| {
                 format!("failed to process wasm at `{}`", temporary_rustc.display())
@@ -268,6 +273,9 @@ struct CargoBuild {
     wasms: Vec<(PathBuf, Profile, bool)>,
     // executed commands as part of the cargo build
     runs: Vec<Vec<String>>,
+    // Configuration we found in the `Cargo.toml` workspace manifest for these
+    // builds.
+    manifest_config: ManifestConfig,
 }
 
 #[derive(serde::Deserialize, serde::Serialize, Debug, Clone)]
@@ -275,6 +283,14 @@ struct Profile {
     opt_level: String,
     debuginfo: Option<u32>,
     test: bool,
+}
+
+#[derive(serde::Deserialize, Debug, Default)]
+#[serde(rename_all = "kebab-case")]
+struct ManifestConfig {
+    wasm_opt: Option<bool>,
+    wasm_name_section: Option<bool>,
+    wasm_producers_section: Option<bool>,
 }
 
 #[derive(serde::Deserialize, serde::Serialize)]
@@ -290,6 +306,16 @@ enum CargoMessage {
     RunWithArgs {
         args: Vec<String>,
     },
+}
+
+impl CargoBuild {
+    fn enable_name_section(&self, profile: &Profile) -> bool {
+        profile.debuginfo.is_some() || self.manifest_config.wasm_name_section.unwrap_or(true)
+    }
+
+    fn enable_producers_section(&self, profile: &Profile) -> bool {
+        profile.debuginfo.is_some() || self.manifest_config.wasm_producers_section.unwrap_or(true)
+    }
 }
 
 /// Executes the `cargo` command, reading all of the JSON that pops out and
@@ -339,6 +365,40 @@ fn execute_cargo(cargo: &mut Command, config: &Config) -> Result<CargoBuild> {
         }
     }
 
+    #[derive(serde::Deserialize)]
+    struct CargoMetadata {
+        workspace_root: String,
+    }
+
+    #[derive(serde::Deserialize)]
+    struct CargoManifest {
+        package: CargoPackage,
+    }
+
+    #[derive(serde::Deserialize)]
+    struct CargoPackage {
+        metadata: Option<ManifestConfig>,
+    }
+
+    let metadata = Command::new("cargo")
+        .arg("metadata")
+        .arg("--no-deps")
+        .arg("--format-version=1")
+        .capture_stdout()?;
+    let metadata = serde_json::from_str::<CargoMetadata>(&metadata)
+        .context("failed to deserialize `cargo metadata`")?;
+    let manifest = Path::new(&metadata.workspace_root).join("Cargo.toml");
+    let toml = fs::read_to_string(&manifest)
+        .context(format!("failed to read manifest: {}", manifest.display()))?;
+    let toml = toml::from_str::<CargoManifest>(&toml).context(format!(
+        "failed to deserialize as TOML: {}",
+        manifest.display()
+    ))?;
+
+    if let Some(meta) = toml.package.metadata {
+        build.manifest_config = meta;
+    }
+
     Ok(build)
 }
 
@@ -348,7 +408,13 @@ fn execute_cargo(cargo: &mut Command, config: &Config) -> Result<CargoBuild> {
 ///
 /// * Unconditionally demangle all Rust function names.
 /// * Use `profile` to optionally drop debug information
-fn process_wasm(wasm: &Path, temp: &Path, profile: &Profile, config: &Config) -> Result<()> {
+fn process_wasm(
+    wasm: &Path,
+    temp: &Path,
+    profile: &Profile,
+    build: &CargoBuild,
+    config: &Config,
+) -> Result<()> {
     config.verbose(|| {
         config.status("Processing", &temp.display().to_string());
     });
@@ -357,7 +423,8 @@ fn process_wasm(wasm: &Path, temp: &Path, profile: &Profile, config: &Config) ->
         // If the `debuginfo` is configured then we leave in the debuginfo
         // sections.
         .generate_dwarf(profile.debuginfo.is_some())
-        .generate_name_section(true)
+        .generate_name_section(build.enable_name_section(profile))
+        .generate_producers_section(build.enable_producers_section(profile))
         .strict_validate(false)
         .parse_file(temp)?;
 
@@ -371,7 +438,7 @@ fn process_wasm(wasm: &Path, temp: &Path, profile: &Profile, config: &Config) ->
         }
     }
 
-    run_wasm_opt(wasm, &module.emit_wasm(), profile, config)?;
+    run_wasm_opt(wasm, &module.emit_wasm(), profile, build, config)?;
     Ok(())
 }
 
@@ -386,6 +453,7 @@ fn run_wasm_bindgen(
     temp: &Path,
     profile: &Profile,
     bindgen_version: &str,
+    build: &CargoBuild,
     config: &Config,
 ) -> Result<()> {
     let tempdir = tempfile::TempDir::new_in(wasm.parent().unwrap())
@@ -407,6 +475,12 @@ fn run_wasm_bindgen(
     cmd.arg("--out-dir").arg(tempdir.path());
     cmd.arg("--out-name").arg("foo");
     cmd.env("WASM_INTERFACE_TYPES", "1");
+    if !build.enable_name_section(profile) {
+        cmd.arg("--remove-name-section");
+    }
+    if !build.enable_producers_section(profile) {
+        cmd.arg("--remove-producers-section");
+    }
 
     run_or_download(
         wasm_bindgen.as_ref(),
@@ -477,13 +551,25 @@ fn install_wasm_bindgen(version: &str, path: &Path, config: &Config) -> Result<(
     Ok(())
 }
 
-fn run_wasm_opt(wasm: &Path, bytes: &[u8], profile: &Profile, config: &Config) -> Result<()> {
+fn run_wasm_opt(
+    wasm: &Path,
+    bytes: &[u8],
+    profile: &Profile,
+    build: &CargoBuild,
+    config: &Config,
+) -> Result<()> {
     // If debuginfo is enabled, automatically disable `wasm-opt`. It will mess
     // up dwarf debug information currently, so we can't run it.
     //
     // Additionally if no optimizations are enabled, no need to run `wasm-opt`,
     // we're not optimizing.
     if profile.debuginfo.is_some() || profile.opt_level == "0" {
+        fs::write(wasm, bytes)?;
+        return Ok(());
+    }
+
+    // Allow explicitly disabling wasm-opt via `Cargo.toml`.
+    if build.manifest_config.wasm_opt == Some(false) {
         fs::write(wasm, bytes)?;
         return Ok(());
     }

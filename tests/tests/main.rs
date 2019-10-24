@@ -56,22 +56,8 @@ fn contains_debuginfo() -> Result<()> {
 
     p.cargo_wasi("build").assert().success();
     let bytes = std::fs::read(p.debug_wasm("foo")).context("failed to read wasm")?;
-
-    let mut parser = wasmparser::ModuleReader::new(&bytes)?;
-    let mut any = false;
-    while !parser.eof() {
-        match parser.read()?.code {
-            wasmparser::SectionCode::Custom { name, .. } => {
-                if name.starts_with(".debug") {
-                    any = true;
-                }
-            }
-            _ => {}
-        }
-    }
-    if !any {
-        panic!("failed to find debuginfo");
-    }
+    let sections = custom_sections(&bytes)?;
+    assert!(sections.iter().any(|s| s.starts_with("producers")));
     Ok(())
 }
 
@@ -83,18 +69,8 @@ fn strip_debuginfo() -> Result<()> {
 
     p.cargo_wasi("build --release").assert().success();
     let bytes = std::fs::read(p.release_wasm("foo")).context("failed to read wasm")?;
-
-    let mut parser = wasmparser::ModuleReader::new(&bytes)?;
-    while !parser.eof() {
-        match parser.read()?.code {
-            wasmparser::SectionCode::Custom { name, .. } => {
-                if name.starts_with(".debug") {
-                    panic!("found `{}` section in wasm file", name);
-                }
-            }
-            _ => {}
-        }
-    }
+    let sections = custom_sections(&bytes)?;
+    assert!(!sections.iter().any(|s| s.starts_with("producers")));
     Ok(())
 }
 
@@ -574,4 +550,46 @@ $",
         )?)
         .code(1);
     Ok(())
+}
+
+#[test]
+fn producers_section() -> Result<()> {
+    let p = support::project()
+        .file(
+            "Cargo.toml",
+            r#"
+                [package]
+                name = "foo"
+                version = "1.0.0"
+
+                [package.metadata]
+                wasm-opt = false
+                wasm-producers-section = false
+            "#,
+        )
+        .file("src/main.rs", "fn main() {}")
+        .build();
+
+    // Should be included in debug build
+    p.cargo_wasi("build").assert().success();
+    let bytes = std::fs::read(p.debug_wasm("foo")).context("failed to read wasm")?;
+    assert!(custom_sections(&bytes)?.contains(&"producers"));
+
+    // ... and shouldnt be included in release build w/o debuginfo
+    p.cargo_wasi("build --release").assert().success();
+    let bytes = std::fs::read(p.release_wasm("foo")).context("failed to read wasm")?;
+    assert!(!custom_sections(&bytes)?.contains(&"producers"));
+    Ok(())
+}
+
+fn custom_sections(bytes: &[u8]) -> Result<Vec<&str>> {
+    let mut sections = Vec::new();
+    let mut parser = wasmparser::ModuleReader::new(&bytes)?;
+    while !parser.eof() {
+        match parser.read()?.code {
+            wasmparser::SectionCode::Custom { name, .. } => sections.push(name),
+            _ => {}
+        }
+    }
+    Ok(sections)
 }
