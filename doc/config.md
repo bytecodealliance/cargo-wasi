@@ -27,14 +27,17 @@ For more documentation about each key, see its section below.
 
 This configuration option is a boolean value (`true` or `false`) which
 indicates whether the `wasm-opt` optimization tool from the [binaryen
-toolkit](https://github.com/webassembly/binaryen) will be executed to further
+toolkit](https://github.com/webassembly/binaryen) might be executed to further
 optimize the produced WebAssembly binaries. The default for this option is
 `true`.
 
-If this option is set to `false`, then `wasm-opt` will never be executed. If
-this option is set to `true`, the `wasm-opt` will still not be run if debuginfo
-is present or if `wasm-bindgen` is present. For more information about this see
-[the documentation about running `wasm-opt`](wasm-opt.md).
+If this option is set to `false`, then `wasm-opt` will never be executed.
+
+If this option is set to `true`, this does not mean `wasm-opt` will
+unconditionally run for all builds. A value of `true` means that `wasm-opt`
+*may* run, depending on the internal heuristics of `cargo wasi`. For more
+information about these heuristics and caveats, see [the documentation about
+running `wasm-opt`](wasm-opt.md).
 
 ## `wasm-name-section`
 
