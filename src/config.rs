@@ -1,5 +1,6 @@
 use crate::Cache;
 use anyhow::Result;
+use std::path::PathBuf;
 use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
 
 pub struct Config {
@@ -70,5 +71,50 @@ impl Config {
             eprintln!(":");
             eprintln!("    {}", cause.to_string().replace("\n", "\n    "));
         }
+    }
+
+    /// Returns the path to execute a tool, and the cache path where it should
+    /// be downloaded to if unavailable.
+    ///
+    /// These are not necessarily the same path (e.g. if using overrides)!
+    ///
+    /// To override the path used for a tool, set an env var of the tool's name
+    /// in uppercase with hyphens replaced with underscores to the desired
+    /// path. For example, `WASM_BINDGEN=path/to/wasm-bindgen` to override the
+    /// `wasm-bindgen` used, or `WASM_OPT=path/to/wasm-opt` for `wasm-opt`.  or
+    /// the `cache` as the fallback.
+    fn get_tool(&self, tool: &str, version: Option<&str>) -> (PathBuf, PathBuf) {
+        let mut cache_path = self.cache().root().join(tool);
+        if let Some(v) = version {
+            cache_path.push(v);
+            cache_path.push(tool)
+        }
+        cache_path.set_extension(std::env::consts::EXE_EXTENSION);
+
+        if let Some(s) = std::env::var_os(tool.to_uppercase().replace("-", "_")) {
+            (s.into(), cache_path)
+        } else {
+            (cache_path.clone(), cache_path)
+        }
+    }
+
+    /// Get the path to our `wasm-bindgen` tool for the given version, and the
+    /// cache path where it should be downloaded to if missing.
+    ///
+    /// These are not necessarily the same path (e.g. if using overrides)!
+    ///
+    /// Overridable via setting the `WASM_BINDGEN=path/to/wasm-bindgen` env var.
+    pub fn get_wasm_bindgen(&self, version: &str) -> (PathBuf, PathBuf) {
+        self.get_tool("wasm-bindgen", Some(version))
+    }
+
+    /// Get the path to our `wasm-opt`, and the cache path where it should be
+    /// downloaded to if missing.
+    ///
+    /// These are not necessarily the same path (e.g. if using overrides)!
+    ///
+    /// Overridable via setting the `WASM_OPT=path/to/wasm-opt` env var.
+    pub fn get_wasm_opt(&self) -> (PathBuf, PathBuf) {
+        self.get_tool("wasm-opt", None)
     }
 }
