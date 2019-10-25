@@ -11,6 +11,7 @@ use std::process::{Command, Stdio};
 mod cache;
 mod config;
 mod utils;
+mod internal;
 
 pub fn main() {
     // See comments in `rmain` around `*_RUNNER` for why this exists here.
@@ -56,6 +57,7 @@ fn rmain(config: &mut Config) -> Result<()> {
         Some("bench") => Subcommand::Bench,
         Some("check") => Subcommand::Check,
         Some("fix") => Subcommand::Fix,
+        Some("self") => return internal::main(&args.collect::<Vec<_>>(), config),
         Some("version") | Some("-V") | Some("--version") => {
             let git_info = match option_env!("GIT_INFO") {
                 Some(s) => format!(" ({})", s),
@@ -197,6 +199,7 @@ USAGE:
     cargo wasi bench [OPTIONS]
     cargo wasi check [OPTIONS]
     cargo wasi fix [OPTIONS]
+    cargo wasi self clean
 
 All options accepted are the same as that of the corresponding `cargo`
 subcommands. You can run `cargo wasi build -h` for more information to learn

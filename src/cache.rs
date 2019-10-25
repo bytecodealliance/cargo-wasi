@@ -3,6 +3,7 @@ use std::fs::{self, File};
 use std::path::{Path, PathBuf};
 
 pub struct Cache {
+    all_versions_root: PathBuf,
     root: PathBuf,
 }
 
@@ -16,11 +17,17 @@ impl Cache {
             },
         };
         let root = all_versions_root.join(env!("CARGO_PKG_VERSION"));
-        Ok(Cache { root })
+        Ok(Cache { all_versions_root, root })
     }
 
     pub fn root(&self) -> &Path {
         &self.root
+    }
+
+    /// Returns the path that all versions of `cargo-wasi` store their cache at,
+    /// for cleaning.
+    pub fn all_versions_root(&self) -> &Path {
+        &self.all_versions_root
     }
 
     /// Get the cache stamp with the given name.

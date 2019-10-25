@@ -681,3 +681,15 @@ $",
         .success();
     Ok(())
 }
+
+#[test]
+fn self_bad() {
+    cargo_wasi("self")
+        .assert()
+        .stderr("error: `self` command must be followed by `clean`\n")
+        .code(1);
+    cargo_wasi("self x")
+        .assert()
+        .stderr("error: unsupported `self` command: x\n")
+        .code(1);
+}

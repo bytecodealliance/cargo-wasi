@@ -103,3 +103,14 @@ $ cargo wasi version
 $ cargo wasi -V
 $ cargo wasi --version
 ```
+
+## `cargo wasi self clean`
+
+This is an internal management subcommand for `cargo wasi` which completely
+clears out the cache that `cargo wasi` uses for itself. This cache includes
+various metadata files and downloaded versions of tools like `wasm-opt` and
+`wasm-bindgen`.
+
+```
+$ cargo wasi self clean
+```
