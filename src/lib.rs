@@ -200,6 +200,7 @@ USAGE:
     cargo wasi check [OPTIONS]
     cargo wasi fix [OPTIONS]
     cargo wasi self clean
+    cargo wasi self update-check
 
 All options accepted are the same as that of the corresponding `cargo`
 subcommands. You can run `cargo wasi build -h` for more information to learn
@@ -688,14 +689,7 @@ fn download(url: &str, name: &str, path: &Path, config: &Config) -> Result<()> {
     config.status("Downloading", name);
     config.verbose(|| config.status("Get", &url));
 
-    let response = reqwest::get(url).context(format!("failed to fetch {}", url))?;
-    if !response.status().is_success() {
-        bail!(
-            "failed to get successful response from {}: {}",
-            url,
-            response.status()
-        );
-    }
+    let response = utils::get(url)?;
     (|| -> Result<()> {
         fs::create_dir_all(parent)
             .context(format!("failed to create directory `{}`", parent.display()))?;

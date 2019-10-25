@@ -114,3 +114,12 @@ various metadata files and downloaded versions of tools like `wasm-opt` and
 ```
 $ cargo wasi self clean
 ```
+
+## `cargo wasi self update-check`
+
+Checks to see if an update is ready for `cargo-wasi`. If it is then instructions
+to acquire the new update will be printed out.
+
+```
+$ cargo wasi self update-check
+```

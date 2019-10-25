@@ -1,5 +1,5 @@
 use crate::config::Config;
-use anyhow::{anyhow, Context, Error, Result};
+use anyhow::{anyhow, bail, Context, Error, Result};
 use fs2::FileExt;
 use std::fmt;
 use std::fs;
@@ -142,3 +142,15 @@ impl fmt::Display for ProcessError {
 }
 
 impl std::error::Error for ProcessError {}
+
+pub fn get(url: &str) -> Result<reqwest::Response> {
+    let response = reqwest::get(url).context(format!("failed to fetch {}", url))?;
+    if !response.status().is_success() {
+        bail!(
+            "failed to get successful response from {}: {}",
+            url,
+            response.status()
+        );
+    }
+    Ok(response)
+}
