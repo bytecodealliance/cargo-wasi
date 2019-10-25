@@ -16,6 +16,9 @@ fn main() {
     let try_self_delete =
         cfg!(windows) || std::env::var_os("__CARGO_WASI_SELF_DELETE_FOR_SURE").is_some();
     if try_self_delete {
+        // We'll be handling this, so recursive invocations of `cargo-wasi`
+        // shouldn't try to handle this.
+        std::env::remove_var("__CARGO_WASI_SELF_DELETE_FOR_SURE");
         let me = match std::env::current_exe() {
             Ok(path) => path,
             Err(e) => {
