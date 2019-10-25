@@ -144,6 +144,22 @@ jobs:
       run: rustup update stable && rustup default stable && rustup component add rustfmt
     - run: cargo fmt -- --check
 
+  book:
+    name: Book Documentation
+    steps:
+    - uses: actions/checkout@master
+    - name: Install Rust
+      run: rustup update stable && rustup default stable
+    - name: Install mdbook
+      run: |
+        set -e
+        curl -L https://github.com/rust-lang-nursery/mdBook/releases/download/v0.3.0/mdbook-v0.3.0-x86_64-unknown-linux-gnu.tar.gz | tar xzf -
+        echo ::add-path::`pwd`
+    - run: cd doc && mdbook build
+    - name: Push to gh-pages
+      run: curl -LsSf https://git.io/fhJ8n | rustc - && (cd doc/book && ../../rust_out)
+      if: github.event_name == 'push' && github.event.ref == 'refs/heads/master'
+
   publish:
     name: Publish
     needs: build
