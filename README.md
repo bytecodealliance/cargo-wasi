@@ -33,11 +33,10 @@ of `cargo wasi` looks very similar to Cargo itself:
 
 And that's just a taste! In general if you'd otherwise execute `cargo foo
 --flag` you can likely execute `cargo wasi foo --flag` and everything will "just
-work" for the wasi target.
-
-For more long-form documentation, examples, and more explanation, be sure to
-consult the [book documentation](https://alexcrichton.github.io/cargo-wasi) for
-this subcommand as well.
+work" for the wasi target. For more long-form documentation, examples, and more
+explanation, be sure to consult the [book
+documentation](https://alexcrichton.github.io/cargo-wasi) for this subcommand as
+well.
 
 To give it a spin yourself, try out the hello-world versions of programs!
 

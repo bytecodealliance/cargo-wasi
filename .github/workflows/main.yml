@@ -146,6 +146,7 @@ jobs:
 
   book:
     name: Book Documentation
+    runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@master
     - name: Install Rust
