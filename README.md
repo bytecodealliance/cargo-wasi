@@ -7,6 +7,8 @@
 
   <p>
     <a href="https://crates.io/crates/cargo-wasi"><img src="https://img.shields.io/crates/v/cargo-wasi.svg?style=flat-square" alt="Crates.io version" /></a>
+    <a href="https://crates.io/crates/cargo-wasi"><img src="https://img.shields.io/crates/d/cargo-wasi.svg?style=flat-square" alt="Download" /></a>
+    <a href="https://alexcrichton.github.io/cargo-wasi/"><img src="https://img.shields.io/badge/docs-latest-blue.svg?style=flat-square" alt="docs.rs docs" /></a>
   </p>
 
   <h3>
