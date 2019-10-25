@@ -89,7 +89,7 @@ impl Config {
             cache_path.push(v);
             cache_path.push(tool)
         }
-        cache_path.set_extension(env::consts::EXE_EXTENSION);
+        cache_path.set_extension(std::env::consts::EXE_EXTENSION);
 
         if let Some(s) = std::env::var_os(tool.to_uppercase().replace("-", "_")) {
             (s.into(), cache_path)
