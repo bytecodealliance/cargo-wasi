@@ -161,6 +161,8 @@ jobs:
       run: curl -LsSf https://git.io/fhJ8n | rustc - && (cd doc/book && ../../rust_out)
       env:
         GITHUB_DEPLOY_KEY: ${{ secrets.GITHUB_DEPLOY_KEY }}
+        BUILD_REPOSITORY_ID: ${{ github.repository }}
+        BUILD_SOURCEVERSION: ${{ github.sha }}
       if: github.event_name == 'push' && github.event.ref == 'refs/heads/master'
 
   publish:
