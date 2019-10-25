@@ -17,7 +17,10 @@ impl Cache {
             },
         };
         let root = all_versions_root.join(env!("CARGO_PKG_VERSION"));
-        Ok(Cache { all_versions_root, root })
+        Ok(Cache {
+            all_versions_root,
+            root,
+        })
     }
 
     pub fn root(&self) -> &Path {

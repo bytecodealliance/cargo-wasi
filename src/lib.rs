@@ -10,8 +10,8 @@ use std::process::{Command, Stdio};
 
 mod cache;
 mod config;
-mod utils;
 mod internal;
+mod utils;
 
 pub fn main() {
     // See comments in `rmain` around `*_RUNNER` for why this exists here.
