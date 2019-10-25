@@ -2,6 +2,7 @@ use crate::config::Config;
 use anyhow::{anyhow, Context, Error, Result};
 use fs2::FileExt;
 use std::fmt;
+use std::fs;
 use std::fs::{File, OpenOptions};
 use std::path::Path;
 use std::process::{Command, ExitStatus, Output, Stdio};
@@ -64,6 +65,9 @@ pub fn check_success(
 
 pub fn flock(path: &Path) -> Result<impl Drop> {
     struct Lock(File);
+    let parent = path.parent().unwrap();
+    fs::create_dir_all(parent)
+        .context(format!("failed to create directory `{}`", parent.display()))?;
     let file = OpenOptions::new()
         .create(true)
         .read(true)
