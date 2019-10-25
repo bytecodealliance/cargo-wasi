@@ -1,8 +1,20 @@
-# cargo wasi
+<div align="center">
+  <h1><code>cargo wasi</code></h1>
 
-A lightweight Cargo subcommand to build code for the `wasm32-wasi` target
+  <p>
+    <strong>A lightweight Cargo subcommand to build code for the `wasm32-wasi` target.</strong>
+  </p>
 
-[Documentation](https://alexcrichton.github.io/cargo-wasi)
+  <p>
+    <a href="https://crates.io/crates/cargo-wasi"><img src="https://img.shields.io/crates/v/cargo-wasi.svg?style=flat-square" alt="Crates.io version" /></a>
+  </p>
+
+  <h3>
+    <a href="https://alexcrichton.github.io/cargo-wasi/">Guide</a>
+    <span> | </span>
+    <a href="https://alexcrichton.github.io/cargo-wasi/contributing.html">Contributing</a>
+  </h3>
+</div>
 
 ## Installation
 
