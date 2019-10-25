@@ -2,7 +2,7 @@
   <h1><code>cargo wasi</code></h1>
 
   <p>
-    <strong>A lightweight Cargo subcommand to build code for the `wasm32-wasi` target.</strong>
+    <strong>A lightweight Cargo subcommand to build code for the <code>wasm32-wasi</code> target.</strong>
   </p>
 
   <p>
