@@ -1,6 +1,6 @@
 # cargo wasi
 
-A lightweight Cargo subcommand to build code for the `wasm32-wasi` target.
+A lightweight Cargo subcommand to build code for the `wasm32-wasi` target
 
 [Documentation](https://alexcrichton.github.io/cargo-wasi)
 
