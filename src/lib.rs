@@ -130,6 +130,7 @@ fn rmain(config: &mut Config) -> Result<()> {
         Subcommand::Build | Subcommand::Check | Subcommand::Fix => {}
     }
 
+    let update_check = internal::UpdateCheck::new(config);
     install_wasi_target(&config)?;
     let build = execute_cargo(&mut cargo, &config)?;
     for (wasm, profile, fresh) in build.wasms.iter() {
@@ -183,6 +184,7 @@ fn rmain(config: &mut Config) -> Result<()> {
             .map_err(|e| utils::hide_normal_process_exit(e, config))?;
     }
 
+    update_check.print();
     Ok(())
 }
 

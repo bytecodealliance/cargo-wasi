@@ -73,6 +73,14 @@ impl Config {
         }
     }
 
+    pub fn info(&self, msg: &str) {
+        let mut shell = StandardStream::stderr(self.choice);
+        drop(shell.set_color(ColorSpec::new().set_fg(Some(Color::Cyan)).set_bold(true)));
+        eprint!("info");
+        drop(shell.reset());
+        eprintln!(": {}", msg);
+    }
+
     /// Returns the path to execute a tool, and the cache path where it should
     /// be downloaded to if unavailable.
     ///

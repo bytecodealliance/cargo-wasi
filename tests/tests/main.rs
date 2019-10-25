@@ -686,7 +686,7 @@ $",
 fn self_bad() {
     cargo_wasi("self")
         .assert()
-        .stderr("error: `self` command must be followed by `clean`\n")
+        .stderr("error: `self` command must be followed by `clean` or `update-check`\n")
         .code(1);
     cargo_wasi("self x")
         .assert()
