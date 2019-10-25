@@ -10,3 +10,4 @@
   - [Running `wasm-opt`](./wasm-opt.md)
   - [Running `wasm-bindgen`](./wasm-bindgen.md)
   - [Testing in WASI](./testing.md)
+- [Contributing](./contributing.md)
