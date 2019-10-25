@@ -19,6 +19,9 @@ After that you can verify it works via:
 $ cargo wasi --version
 ```
 
+[Read more about
+installation](https://alexcrichton.github.io/cargo-wasi/install.html)
+
 ## Usage
 
 The `cargo wasi` subcommand is a thin wrapper around `cargo` subcommands,
