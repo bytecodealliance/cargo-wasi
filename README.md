@@ -84,7 +84,7 @@ wasm-name-section = false     # remove the name section from release artifacts
 ```
 
 For a full list of configuration options see the
-[documentation](https://alexcrichton.github.io/cargo-wasi).
+[documentation](https://alexcrichton.github.io/cargo-wasi/config.html).
 
 ## Updating `cargo-wasi`
 
