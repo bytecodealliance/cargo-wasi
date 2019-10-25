@@ -10,4 +10,6 @@
   - [Running `wasm-opt`](./wasm-opt.md)
   - [Running `wasm-bindgen`](./wasm-bindgen.md)
   - [Testing in WASI](./testing.md)
+  - [Updating `cargo wasi`](./updating.md)
+  - [Uninstalling `cargo wasi`](./uninstalling.md)
 - [Contributing](./contributing.md)
