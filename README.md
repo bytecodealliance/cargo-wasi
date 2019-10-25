@@ -33,27 +33,28 @@ After that you can verify it works via:
 $ cargo wasi --version
 ```
 
-[Read more about
-installation](https://alexcrichton.github.io/cargo-wasi/install.html)
+[**Read more about installation in the
+guide!**](https://alexcrichton.github.io/cargo-wasi/install.html)
 
 ## Usage
 
 The `cargo wasi` subcommand is a thin wrapper around `cargo` subcommands,
-providing optimized defaults for the `wasm32-wasi` target. Because of this usage
-of `cargo wasi` looks very similar to Cargo itself:
+providing optimized defaults for the `wasm32-wasi` target. Using `cargo wasi`
+looks very similar to using `cargo`:
 
-* `cargo wasi build` - build your code in debug mode for the wasi target.
-* `cargo wasi build --release` - build the optimized version of your `*.wasm`.
-* `cargo wasi run` - execute a binary
-* `cargo wasi test` - run your tests in `wasm32-wasi`
-* `cargo wasi bench` - run your benchmarks in `wasm32-wasi`
+* `cargo wasi build` — build your code in debug mode for the wasi target.
 
-And that's just a taste! In general if you'd otherwise execute `cargo foo
---flag` you can likely execute `cargo wasi foo --flag` and everything will "just
-work" for the wasi target. For more long-form documentation, examples, and more
-explanation, be sure to consult the [book
-documentation](https://alexcrichton.github.io/cargo-wasi) for this subcommand as
-well.
+* `cargo wasi build --release` — build the optimized version of your `*.wasm`.
+
+* `cargo wasi run` — execute a binary.
+
+* `cargo wasi test` — run your tests in `wasm32-wasi`.
+
+* `cargo wasi bench` — run your benchmarks in `wasm32-wasi`.
+
+In general, if you'd otherwise execute `cargo foo --flag` you can likely execute
+`cargo wasi foo --flag` and everything will "just work" for the `wasm32-wasi`
+target.
 
 To give it a spin yourself, try out the hello-world versions of programs!
 
@@ -69,7 +70,7 @@ $ cargo wasi run
 Hello, world!
 ```
 
-or a library with some tests:
+Or a library with some tests:
 
 ```
 $ cargo new wasi-hello-world --lib
@@ -87,42 +88,10 @@ test tests::it_works ... ok
 test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out
 ```
 
-## Configuration
+[**Read more about `cargo wasi` usage in the
+guide!**](https://alexcrichton.github.io/cargo-wasi/cli-usage.html)
 
-The `cargo wasi` subcommand takes no flags itself since it forwards all flags to
-Cargo itself. To configure `cargo wasi` you'll be editing your workspace
-`Cargo.toml`:
-
-```toml
-[package.metadata]
-wasm-opt = false              # force wasm-opt to never run
-wasm-name-section = false     # remove the name section from release artifacts
-# ...
-```
-
-For a full list of configuration options see the
-[documentation](https://alexcrichton.github.io/cargo-wasi/config.html).
-
-## Updating `cargo-wasi`
-
-If you already have `cargo-wasi` installed and you'd like to update your
-installation, you can execute:
-
-```
-$ cargo install cargo-wasi --force
-```
-
-## Uninstalling `cargo-wasi`
-
-If you'd like to remove `cargo-wasi` from your system, you'll want to first
-clear out the subcommand's caches and then remove the subcommand itself.
-
-```
-$ cargo wasi self clean
-$ cargo uninstall cargo-wasi
-```
-
-# License
+## License
 
 This project is licensed under either of
 
@@ -138,3 +107,6 @@ at your option.
 Unless you explicitly state otherwise, any contribution intentionally submitted
 for inclusion in this project by you, as defined in the Apache-2.0 license,
 shall be dual licensed as above, without any additional terms or conditions.
+
+[**See the contributing section of the guide to start hacking on `cargo
+wasi`!**](https://alexcrichton.github.io/cargo-wasi/contributing.html)
