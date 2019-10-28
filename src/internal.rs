@@ -119,7 +119,7 @@ impl UpdateCheck<'_> {
         let hour = Duration::from_secs(3600);
         let day = hour * 24;
         let week = day * 7;
-        if now < metadata.modified()? + week && false {
+        if now < metadata.modified()? + week {
             return Ok(false);
         }
 
@@ -127,7 +127,7 @@ impl UpdateCheck<'_> {
         // to see if an update is available. Again, we're being as uber super
         // cautious as we can be here.
         if let Ok(metadata) = last_check.metadata() {
-            if now < metadata.modified()? + week && false {
+            if now < metadata.modified()? + week {
                 return Ok(false);
             }
         }
