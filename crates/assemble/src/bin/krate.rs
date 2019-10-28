@@ -41,7 +41,7 @@ Precompiled binary of `cargo-wasi` for {target}
     fs::create_dir("tmp/src").context("failed to create `src`")?;
     fs::write(
         "tmp/src/lib.rs",
-        "pub const BYTES: &[u8] = include_bytes!(\"binary\");",
+        "pub fn bytes() -> &'static [u8] { include_bytes!(\"binary\") }",
     )
     .context("failed to write `lib.rs`")?;
     fs::copy(&binary, "tmp/src/binary").context("failed to write `binary`")?;

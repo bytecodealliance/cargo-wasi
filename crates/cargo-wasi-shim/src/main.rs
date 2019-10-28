@@ -19,19 +19,27 @@ use std::process::Command;
 // that doesn't have precompiled binaries do things go awry.
 cfg_if::cfg_if! {
     if #[cfg(feature = "locally-developed")] {
-        const BYTES: Option<&[u8]> = Some(include_bytes!(env!("BYTES_LOC")));
+        fn bytes() -> Option<&'static [u8]> {
+            Some(include_bytes!(env!("BYTES_LOC")))
+        }
         fn cargo_wasi_main() { unreachable!() }
     } else if #[cfg(all(target_os = "windows", target_arch = "x86_64"))] {
-        const BYTES: Option<&[u8]> = Some(cargo_wasi_exe_x86_64_pc_windows_msvc::BYTES);
+        fn bytes() -> Option<&'static [u8]> {
+            Some(cargo_wasi_exe_x86_64_pc_windows_msvc::bytes())
+        }
         fn cargo_wasi_main() { unreachable!() }
     } else if #[cfg(all(target_os = "linux", target_arch = "x86_64"))] {
-        const BYTES: Option<&[u8]> = Some(cargo_wasi_exe_x86_64_unknown_linux_musl::BYTES);
+        fn bytes() -> Option<&'static [u8]> {
+            Some(cargo_wasi_exe_x86_64_unknown_linux_musl::bytes())
+        }
         fn cargo_wasi_main() { unreachable!() }
     } else if #[cfg(all(target_os = "macos", target_arch = "x86_64"))] {
-        const BYTES: Option<&[u8]> = Some(cargo_wasi_exe_x86_64_apple_darwin::BYTES);
+        fn bytes() -> Option<&'static [u8]> {
+            Some(cargo_wasi_exe_x86_64_apple_darwin::bytes())
+        }
         fn cargo_wasi_main() { unreachable!() }
     } else {
-        const BYTES: Option<&[u8]> = None;
+        fn bytes() -> Option<&'static [u8]> { None }
         fn cargo_wasi_main() { cargo_wasi_src::main() }
     }
 }
@@ -39,7 +47,7 @@ cfg_if::cfg_if! {
 fn main() {
     // If we have a precompiled binary, run that, otherwise delegate to
     // `cargo_wasi_src`
-    match BYTES {
+    match bytes() {
         Some(n) => run_precompiled(n),
         None => cargo_wasi_main(),
     }
