@@ -648,7 +648,7 @@ fn run_or_download(
 }
 
 fn install_wasm_opt(path: &Path, config: &Config) -> Result<()> {
-    let tag = "version_89";
+    let tag = "1.39.1";
     let binaryen_url = |target: &str| {
         let mut url = "https://github.com/WebAssembly/binaryen/releases/download/".to_string();
         url.push_str(tag);
@@ -660,15 +660,8 @@ fn install_wasm_opt(path: &Path, config: &Config) -> Result<()> {
         return url;
     };
 
-    // We want to ideally only use the official binary releases from binaryen
-    // itself. Unfortunately though at the time of this writing binaryen's Linux
-    // binaries frequently segfault on Linux systems. This is thought to be
-    // fixed in WebAssembly/binaryen#2405 but it's not released yet at the time
-    // of this writing. To work around this we built the binaries for that
-    // release and published it to a fork (alexcrichton/binaryen). Once binaryen
-    // publishes a new release we should favor those binaries instead.
     let url = if cfg!(target_os = "linux") && cfg!(target_arch = "x86_64") {
-        "https://github.com/alexcrichton/binaryen/releases/download/2019-10-28/binaryen-x86_64-unknown-linux-musl.tar.gz".to_string()
+        binaryen_url("x86_64-linux")
     } else if cfg!(target_os = "macos") && cfg!(target_arch = "x86_64") {
         binaryen_url("x86_64-apple-darwin")
     } else if cfg!(target_os = "windows") && cfg!(target_arch = "x86_64") {
