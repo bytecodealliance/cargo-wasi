@@ -18,10 +18,6 @@
   </h3>
 </div>
 
-> **Note**: This subcommand is not ready for general use it. It is still in
-> development. It's recommended to set your expectations appropriately as a
-> consequence!
-
 ## Installation
 
 To install this Cargo subcommand, first you'll want to [install
