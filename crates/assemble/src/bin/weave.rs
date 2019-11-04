@@ -62,7 +62,8 @@ fn main() -> anyhow::Result<()> {
     fs::remove_file(tmp.join("shim/build.rs")).context("failed to remove build script")?;
     let mut manifest = fs::read_to_string(&manifest_path)
         .context("failed to read manifest")?
-        .replace("cargo-wasi-shim", "cargo-wasi");
+        .replace("cargo-wasi-shim", "cargo-wasi")
+        .replace("0.0.0", version);
     manifest.truncate(manifest.find("[features]").unwrap());
     manifest.push_str("\n");
     for (target, cfg) in TARGETS {
