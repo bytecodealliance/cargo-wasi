@@ -4,7 +4,7 @@ version = "0.1.16"
 authors = ["Alex Crichton <alex@alexcrichton.com>"]
 edition = "2018"
 license = "MIT/Apache-2.0"
-repository = "https://github.com/alexcrichton/cargo-wasi"
+repository = "https://github.com/bytecodealliance/cargo-wasi"
 readme = "README.md"
 description = """
 Subcommand for Cargo to easily build code for `wasm32-wasi`

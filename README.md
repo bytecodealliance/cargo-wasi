@@ -10,13 +10,13 @@
   <p>
     <a href="https://crates.io/crates/cargo-wasi"><img src="https://img.shields.io/crates/v/cargo-wasi.svg?style=flat-square" alt="Crates.io version" /></a>
     <a href="https://crates.io/crates/cargo-wasi"><img src="https://img.shields.io/crates/d/cargo-wasi.svg?style=flat-square" alt="Download" /></a>
-    <a href="https://alexcrichton.github.io/cargo-wasi/"><img src="https://img.shields.io/badge/docs-latest-blue.svg?style=flat-square" alt="docs.rs docs" /></a>
+    <a href="https://bytecodealliance.github.io/cargo-wasi/"><img src="https://img.shields.io/badge/docs-latest-blue.svg?style=flat-square" alt="docs.rs docs" /></a>
   </p>
 
   <h3>
-    <a href="https://alexcrichton.github.io/cargo-wasi/">Guide</a>
+    <a href="https://bytecodealliance.github.io/cargo-wasi/">Guide</a>
     <span> | </span>
-    <a href="https://alexcrichton.github.io/cargo-wasi/contributing.html">Contributing</a>
+    <a href="https://bytecodealliance.github.io/cargo-wasi/contributing.html">Contributing</a>
   </h3>
 </div>
 
@@ -36,7 +36,7 @@ $ cargo wasi --version
 ```
 
 [**Read more about installation in the
-guide!**](https://alexcrichton.github.io/cargo-wasi/install.html)
+guide!**](https://bytecodealliance.github.io/cargo-wasi/install.html)
 
 ## Usage
 
@@ -91,7 +91,7 @@ test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out
 ```
 
 [**Read more about `cargo wasi` usage in the
-guide!**](https://alexcrichton.github.io/cargo-wasi/cli-usage.html)
+guide!**](https://bytecodealliance.github.io/cargo-wasi/cli-usage.html)
 
 ## License
 
@@ -111,4 +111,4 @@ for inclusion in this project by you, as defined in the Apache-2.0 license,
 shall be dual licensed as above, without any additional terms or conditions.
 
 [**See the contributing section of the guide to start hacking on `cargo
-wasi`!**](https://alexcrichton.github.io/cargo-wasi/contributing.html)
+wasi`!**](https://bytecodealliance.github.io/cargo-wasi/contributing.html)

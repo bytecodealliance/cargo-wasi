@@ -12,7 +12,7 @@ $ cargo install cargo-wasi
 This will install a precompiled binary for most major platforms or install from
 source if we don't have a precompiled binary for your platform. If you would
 like to see a precompiled binary for your platform [please file an
-issue](https://github.com/alexcrichton/cargo-wasi/issues/new)!.
+issue](https://github.com/bytecodealliance/cargo-wasi/issues/new)!.
 
 To verify that your installation works, you can execute:
 

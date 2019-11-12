@@ -2,7 +2,7 @@
 
 This section contains instructions on how to get this project up and running for
 development. Source code for this project lives on GitHub at
-https://github.com/alexcrichton/cargo-wasi.
+https://github.com/bytecodealliance/cargo-wasi.
 
 ## Prerequisites
 
@@ -17,7 +17,7 @@ https://github.com/alexcrichton/cargo-wasi.
 You'll clone the code via `git`:
 
 ```
-$ git clone https://github.com/alexcrichton/cargo-wasi
+$ git clone https://github.com/bytecodealliance/cargo-wasi
 ```
 
 ## Testing changes
