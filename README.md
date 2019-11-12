@@ -1,6 +1,8 @@
 <div align="center">
   <h1><code>cargo wasi</code></h1>
 
+<strong>A <a href="https://bytecodealliance.org/">Bytecode Alliance</a> project</strong>
+
   <p>
     <strong>A lightweight Cargo subcommand to build code for the <code>wasm32-wasi</code> target.</strong>
   </p>
