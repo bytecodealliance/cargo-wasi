@@ -38,7 +38,7 @@ $ cargo wasi check --tests
 ## `cargo wasi run`
 
 Forwards everything to `cargo run`, and runs all binaries in `wasmtime`.
-Arguments passed will be forwarded to `cargo bench`. Note that it's not
+Arguments passed will be forwarded to `wasmtime`. Note that it's not
 necessary to run `cargo wasi build` before this subcommand. Example usage looks
 like:
 
