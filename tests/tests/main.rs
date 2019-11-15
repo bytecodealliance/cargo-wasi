@@ -438,6 +438,70 @@ fn run_forward_args() -> Result<()> {
 }
 
 #[test]
+fn run_fs_access_error() -> Result<()> {
+    support::project()
+        .file("data.txt", "text")
+        .file(
+            "src/main.rs",
+            r#"
+                use std::fs::read;
+                use std::io;
+                fn main() -> Result<(), io::Error> {
+                    let text = String::from_utf8(read("data.txt")?).unwrap();
+                    println!("File contents: {}", text);
+                    Ok(())
+                }
+            "#,
+        )
+        .build()
+        .cargo_wasi("run")
+        .assert()
+        .stderr(is_match(
+            "^\
+.*Compiling foo v1.0.0 .*
+.*Finished dev .*
+.*Running `.*`
+.*Running `.*`
+.*failed to find a preopened file descriptor.*
+$",
+        )?)
+        .code(1);
+    Ok(())
+}
+
+#[test]
+fn run_fs_access_success() -> Result<()> {
+    support::project()
+        .file("data.txt", "some text")
+        .file(
+            "src/main.rs",
+            r#"
+                use std::fs::read;
+                use std::io;
+                fn main() -> Result<(), io::Error> {
+                    let text = String::from_utf8(read("data.txt")?).unwrap();
+                    println!("File contents: {}", text);
+                    Ok(())
+                }
+            "#,
+        )
+        .build()
+        .cargo_wasi("run -- --runtime-args --dir=.")
+        .assert()
+        .stdout("File contents: some text\n")
+        .stderr(is_match(
+            "^\
+.*Compiling foo v1.0.0 .*
+.*Finished dev .*
+.*Running `.*`
+.*Running `.*`
+$",
+        )?)
+        .success();
+    Ok(())
+}
+
+#[test]
 fn test() -> Result<()> {
     support::project()
         .file(

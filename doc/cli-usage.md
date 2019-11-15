@@ -38,8 +38,9 @@ $ cargo wasi check --tests
 ## `cargo wasi run`
 
 Forwards everything to `cargo run`, and runs all binaries in `wasmtime`.
-Arguments passed will be forwarded to `wasmtime`. Note that it's not
-necessary to run `cargo wasi build` before this subcommand. Example usage looks
+Arguments passed will be forwarded to binaries. Additional runtime arguments
+may be passed using `--runtime-args`. Note that it's not necessary to
+run `cargo wasi build` before this subcommand. Example usage looks
 like:
 
 ```
@@ -47,6 +48,7 @@ $ cargo wasi run
 $ cargo wasi run --release
 $ cargo wasi run arg1 arg2
 $ cargo wasi run -- --flag-for-wasm-binary
+$ cargo wasi run -- --runtime-args "--dir=."
 $ cargo wasi run --bin foo
 ```
 

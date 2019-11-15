@@ -177,9 +177,11 @@ fn rmain(config: &mut Config) -> Result<()> {
 
     for run in build.runs.iter() {
         config.status("Running", &format!("`{}`", run.join(" ")));
+        let (runtime_args, binary_args) = utils::split_args(run);
         Command::new("wasmtime")
+            .args(runtime_args.iter())
             .arg("--")
-            .args(run.iter())
+            .args(binary_args.iter())
             .run()
             .map_err(|e| utils::hide_normal_process_exit(e, config))?;
     }

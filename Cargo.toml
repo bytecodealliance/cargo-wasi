@@ -23,6 +23,7 @@ members = [
   'crates/cargo-wasi-shim',
   'examples/markdown',
   'examples/hello-world',
+  'examples/read-file',
 ]
 exclude = ['tmp', 'target']
 

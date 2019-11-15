@@ -154,3 +154,67 @@ pub fn get(url: &str) -> Result<reqwest::Response> {
     }
     Ok(response)
 }
+
+pub fn split_args(args: &[String]) -> (Vec<String>, Vec<String>) {
+    let mut runtime_args = vec![];
+    let mut binary_args = vec![];
+
+    for i in 0..args.len() {
+        let argument = &args[i];
+        if argument == "--runtime-args" {
+            if i + 1 < args.len() {
+                runtime_args.extend_from_slice(&args[i+1..]);
+            }
+            break;
+        } else {
+            binary_args.push(argument.clone());
+        }
+    }
+
+    (runtime_args, binary_args)
+}
+
+#[test]
+fn split_args_empty() {
+    let (runtime_args, binary_args) = split_args(&[]);
+    assert_eq!(
+        (runtime_args, binary_args),
+        (vec![], vec![]),
+    );
+}
+
+#[test]
+fn split_args_only_binary() {
+    let (runtime_args, binary_args) = split_args(&vec!["a".to_owned(), "b".to_owned()]);
+    assert_eq!(
+        (runtime_args, binary_args),
+        (vec![], vec!["a".to_owned(), "b".to_owned()]),
+    );
+}
+
+#[test]
+fn split_args_only_runtime()  {
+    let (runtime_args, binary_args) = split_args(&vec!["--runtime-args".to_owned(), "--dir=.".to_owned()]);
+    assert_eq!(
+        (runtime_args, binary_args),
+        (vec!["--dir=.".to_owned()], vec![]),
+    );
+}
+
+#[test]
+fn split_args_runtime_before_binary() {
+    let (runtime_args, binary_args) = split_args(&vec!["--runtime-args".to_owned(), "--dir=.".to_owned(), "a".to_owned()]);
+    assert_eq!(
+        (runtime_args, binary_args),
+        (vec!["--dir=.".to_owned(), "a".to_owned()], vec![]),
+    );
+}
+
+#[test]
+fn split_args_runtime_after_binary() {
+    let (runtime_args, binary_args) = split_args(&vec!["a".to_owned(), "--runtime-args".to_owned(), "--dir=.".to_owned()]);
+    assert_eq!(
+        (runtime_args, binary_args),
+        (vec!["--dir=.".to_owned()], vec!["a".to_owned()]),
+    );
+}

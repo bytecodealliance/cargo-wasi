@@ -1,0 +1,5 @@
+[package]
+name = "read-file"
+version = "0.1.0"
+authors = ["cargo-wasi contributors"]
+edition = "2018"
