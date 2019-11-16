@@ -163,7 +163,7 @@ pub fn split_args(args: &[String]) -> (Vec<String>, Vec<String>) {
         let argument = &args[i];
         if argument == "--runtime-args" {
             if i + 1 < args.len() {
-                runtime_args.extend_from_slice(&args[i+1..]);
+                runtime_args.extend_from_slice(&args[i + 1..]);
             }
             break;
         } else {
@@ -177,10 +177,7 @@ pub fn split_args(args: &[String]) -> (Vec<String>, Vec<String>) {
 #[test]
 fn split_args_empty() {
     let (runtime_args, binary_args) = split_args(&[]);
-    assert_eq!(
-        (runtime_args, binary_args),
-        (vec![], vec![]),
-    );
+    assert_eq!((runtime_args, binary_args), (vec![], vec![]),);
 }
 
 #[test]
@@ -193,8 +190,9 @@ fn split_args_only_binary() {
 }
 
 #[test]
-fn split_args_only_runtime()  {
-    let (runtime_args, binary_args) = split_args(&vec!["--runtime-args".to_owned(), "--dir=.".to_owned()]);
+fn split_args_only_runtime() {
+    let (runtime_args, binary_args) =
+        split_args(&vec!["--runtime-args".to_owned(), "--dir=.".to_owned()]);
     assert_eq!(
         (runtime_args, binary_args),
         (vec!["--dir=.".to_owned()], vec![]),
@@ -203,7 +201,11 @@ fn split_args_only_runtime()  {
 
 #[test]
 fn split_args_runtime_before_binary() {
-    let (runtime_args, binary_args) = split_args(&vec!["--runtime-args".to_owned(), "--dir=.".to_owned(), "a".to_owned()]);
+    let (runtime_args, binary_args) = split_args(&vec![
+        "--runtime-args".to_owned(),
+        "--dir=.".to_owned(),
+        "a".to_owned(),
+    ]);
     assert_eq!(
         (runtime_args, binary_args),
         (vec!["--dir=.".to_owned(), "a".to_owned()], vec![]),
@@ -212,7 +214,11 @@ fn split_args_runtime_before_binary() {
 
 #[test]
 fn split_args_runtime_after_binary() {
-    let (runtime_args, binary_args) = split_args(&vec!["a".to_owned(), "--runtime-args".to_owned(), "--dir=.".to_owned()]);
+    let (runtime_args, binary_args) = split_args(&vec![
+        "a".to_owned(),
+        "--runtime-args".to_owned(),
+        "--dir=.".to_owned(),
+    ]);
     assert_eq!(
         (runtime_args, binary_args),
         (vec!["--dir=.".to_owned()], vec!["a".to_owned()]),
