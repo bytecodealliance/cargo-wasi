@@ -546,9 +546,7 @@ fn run_panic() -> Result<()> {
 .*Running `.*`
 thread 'main' panicked at 'test', src.main.rs.*
 note: run with `RUST_BACKTRACE=1` .*
-error: failed to process main module `.*`
-    caused by: Instantiation error: .*
-$",
+",
         )?)
         .code(1);
     Ok(())
