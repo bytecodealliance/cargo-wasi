@@ -693,3 +693,36 @@ fn self_bad() {
         .stderr("error: unsupported `self` command: x\n")
         .code(1);
 }
+
+#[test]
+fn workspace_works() -> Result<()> {
+    let p = support::project()
+        .file(
+            "Cargo.toml",
+            r#"
+                [workspace]
+                members = ['a']
+            "#,
+        )
+        .file(
+            "a/Cargo.toml",
+            r#"
+                [package]
+                name = "foo"
+                version = "1.0.0"
+            "#,
+        )
+        .file("a/src/main.rs", "fn main() {}")
+        .build();
+
+    p.cargo_wasi("build")
+        .assert()
+        .stderr(is_match(
+            "^\
+.*Compiling foo v1.0.0 .*
+.*Finished dev .*
+$",
+        )?)
+        .success();
+    Ok(())
+}

@@ -370,7 +370,7 @@ fn execute_cargo(cargo: &mut Command, config: &Config) -> Result<CargoBuild> {
 
     #[derive(serde::Deserialize)]
     struct CargoManifest {
-        package: CargoPackage,
+        package: Option<CargoPackage>,
     }
 
     #[derive(serde::Deserialize)]
@@ -393,7 +393,7 @@ fn execute_cargo(cargo: &mut Command, config: &Config) -> Result<CargoBuild> {
         manifest.display()
     ))?;
 
-    if let Some(meta) = toml.package.metadata {
+    if let Some(meta) = toml.package.and_then(|p| p.metadata) {
         build.manifest_config = meta;
     }
 
