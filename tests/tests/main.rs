@@ -524,7 +524,6 @@ fn test_flags() -> Result<()> {
 }
 
 #[test]
-#[cfg_attr(windows, ignore)] // FIXME: when wasmtime fixes its traps here run this test
 fn run_panic() -> Result<()> {
     support::project()
         .file(
