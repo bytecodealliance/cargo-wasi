@@ -24,3 +24,14 @@ and that should print both the version number as well as git information about
 where the binary was built from.
 
 Now that everything is set, let's build some code for wasi!
+
+## Building from Source
+
+Installing from crates.io via `cargo install cargo-wasi` will install
+precompiled binaries. These binaries are built on the `cargo-wasi` repository's
+CI and are uploaded to crates.io as part of the publication process. If you'd
+prefer to install from source, you can execute this command instead:
+
+```
+$ cargo install cargo-wasi-src
+```
