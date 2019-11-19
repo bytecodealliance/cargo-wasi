@@ -4,6 +4,10 @@
 > experimental, it's recommended that you expect breakage and/or surprises if
 > you're using this.
 
+> **Note**: When building your crate with WebAssembly Interface Types enabled
+> via `wasm-bindgen`, due to a bug in `wasm-bindgen`, it is currently necessary
+> to build in release mode, i.e., `cargo wasi build --release`.
+
 The [`wasm-bindgen` project](https://github.com/rustwasm/wasm-bindgen) is
 primarily targeted at JavaScript and the web, but is also becomimg the primary
 experiment grounds of WebAssembly Interface Types for Rust. If you're not using
