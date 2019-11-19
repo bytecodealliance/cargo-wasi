@@ -12,10 +12,12 @@ Subcommand for Cargo to easily build code for `wasm32-wasi`
 exclude = ['cargo-wasi-*']
 
 # This package will be renamed on crates.io to `cargo-wasi-src`, so make sure
-# the binary is always called `cargo-wasi`.
+# the binary/library is always called `cargo-wasi`.
 [[bin]]
 name = "cargo-wasi"
 path = "src/main.rs"
+[lib]
+name = "cargo_wasi"
 
 [workspace]
 members = [
