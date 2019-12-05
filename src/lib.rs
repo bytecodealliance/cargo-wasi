@@ -626,9 +626,13 @@ fn run_or_download(
         Ok(()) => return Ok(()),
         Err(e) => e,
     };
-    let any_not_found = err.chain().any(|e| {
+    let rerun_after_download = err.chain().any(|e| {
+        // NotFound means we need to clearly download, PermissionDenied may mean
+        // that we were racing a download and the file wasn't executable, so
+        // fall through and wait for the download to finish to try again.
         if let Some(err) = e.downcast_ref::<io::Error>() {
-            return err.kind() == io::ErrorKind::NotFound;
+            return err.kind() == io::ErrorKind::NotFound
+                || err.kind() == io::ErrorKind::PermissionDenied;
         }
         false
     });
@@ -636,7 +640,7 @@ fn run_or_download(
     // This may have failed for some reason other than `NotFound`, in which case
     // it's a legitimate error. Additionally `requested` may not actually be a
     // path that we download, in which case there's also nothing that we can do.
-    if !any_not_found || requested != cache {
+    if !rerun_after_download || requested != cache {
         return Err(err);
     }
 
