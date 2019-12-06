@@ -107,19 +107,24 @@ fn rmain(config: &mut Config) -> Result<()> {
     //
     // Also note that we check here before we actually build that a runtime is
     // present, notably `wasmtime`.
+    let wasi_runner = env::var("CARGO_TARGET_WASM32_WASI_RUNNER").unwrap_or("wasmtime".to_string());
+
     match subcommand {
         Subcommand::Run | Subcommand::Bench | Subcommand::Test => {
-            if which::which("wasmtime").is_err() {
+            if which::which(&wasi_runner).is_err() {
                 let mut msg = format!(
-                    "failed to find `wasmtime` in $PATH, you'll want to \
-                     install `wasmtime` before running this command\n"
+                    "failed to find `{}` in $PATH, you'll want to \
+                     install `{}` before running this command\n",
+                    wasi_runner, wasi_runner
                 );
-                if cfg!(unix) {
-                    msg.push_str("you can also install through a shell:\n\n");
-                    msg.push_str("\tcurl https://wasmtime.dev/install.sh -sSf | bash\n");
-                } else {
-                    msg.push_str("you can also install through the installer:\n\n");
-                    msg.push_str("\thttps://github.com/CraneStation/wasmtime/releases/download/dev/wasmtime-dev-x86_64-windows.msi\n");
+                if &wasi_runner == "wasmtime" {
+                    if cfg!(unix) {
+                        msg.push_str("you can also install through a shell:\n\n");
+                        msg.push_str("\tcurl https://wasmtime.dev/install.sh -sSf | bash\n");
+                    } else {
+                        msg.push_str("you can also install through the installer:\n\n");
+                        msg.push_str("\thttps://github.com/CraneStation/wasmtime/releases/download/dev/wasmtime-dev-x86_64-windows.msi\n");
+                    }
                 }
                 bail!("{}", msg);
             }
@@ -177,7 +182,7 @@ fn rmain(config: &mut Config) -> Result<()> {
 
     for run in build.runs.iter() {
         config.status("Running", &format!("`{}`", run.join(" ")));
-        Command::new("wasmtime")
+        Command::new(&wasi_runner)
             .arg("--")
             .args(run.iter())
             .run()
