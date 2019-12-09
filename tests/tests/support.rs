@@ -25,10 +25,11 @@ pub fn project() -> ProjectBuilder {
 
 pub struct Project {
     root: PathBuf,
+    runtime_override: Option<String>,
 }
 
 pub struct ProjectBuilder {
-    root: Project,
+    project: Project,
     saw_manifest: bool,
 }
 
@@ -38,17 +39,25 @@ impl ProjectBuilder {
         drop(fs::remove_dir_all(&root));
         fs::create_dir_all(&root).unwrap();
         ProjectBuilder {
-            root: Project { root },
+            project: Project {
+                root,
+                runtime_override: None,
+            },
             saw_manifest: false,
         }
     }
 
     pub fn root(&self) -> PathBuf {
-        self.root.root()
+        self.project.root()
     }
 
     pub fn file<B: AsRef<Path>>(&mut self, path: B, body: &str) -> &mut Self {
         self._file(path.as_ref(), body);
+        self
+    }
+
+    pub fn override_runtime(&mut self, runtime_override: &str) -> &mut Self {
+        self.project.runtime_override = Some(runtime_override.to_string());
         self
     }
 
@@ -73,7 +82,8 @@ impl ProjectBuilder {
             );
         }
         Project {
-            root: self.root.root.clone(),
+            root: self.project.root.clone(),
+            runtime_override: self.project.runtime_override.clone(),
         }
     }
 }
@@ -106,6 +116,11 @@ impl Project {
         process
             .current_dir(&self.root)
             .env("CARGO_HOME", self.root.join("cargo-home"));
+
+        if let Some(runtime_override) = &self.runtime_override {
+            process.env("CARGO_TARGET_WASM32_WASI_RUNNER", runtime_override);
+        }
+
         return process;
     }
 }
