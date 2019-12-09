@@ -2,6 +2,7 @@ use crate::cache::Cache;
 use crate::config::Config;
 use crate::utils::CommandExt;
 use anyhow::{bail, Context, Result};
+use structopt::StructOpt;
 use std::env;
 use std::fs;
 use std::io::{self, Read};
@@ -44,10 +45,32 @@ enum Subcommand {
     Fix,
 }
 
+#[derive(StructOpt, Debug)]
+struct Build {
+    #[structopt(long)]
+    runtime_args: String,
+    binary_args: Vec<String>,
+}
+
+#[derive(StructOpt, Debug)]
+enum Options {
+    Build(Build),
+    Run,
+    Test,
+    Bench,
+    Check,
+    Fix,
+    #[structopt(name = "self")]
+    Main,
+}
+
 fn rmain(config: &mut Config) -> Result<()> {
     config.load_cache()?;
 
     // skip the current executable and the `wasi` inserted by Cargo
+    println!("Raw args: {:?}", env::args());
+    let options = Options::from_args();
+    println!("Args from structopt: {:?}", options);
     let mut args = env::args_os().skip(2);
     let subcommand = args.next().and_then(|s| s.into_string().ok());
     let subcommand = match subcommand.as_ref().map(|s| s.as_str()) {
@@ -177,9 +200,11 @@ fn rmain(config: &mut Config) -> Result<()> {
 
     for run in build.runs.iter() {
         config.status("Running", &format!("`{}`", run.join(" ")));
+        let (runtime_args, binary_args) = utils::split_args(run);
         Command::new("wasmtime")
+            .args(runtime_args.iter())
             .arg("--")
-            .args(run.iter())
+            .args(binary_args.iter())
             .run()
             .map_err(|e| utils::hide_normal_process_exit(e, config))?;
     }
