@@ -514,7 +514,7 @@ $",
         .build()
         .cargo_wasi("run")
         .assert()
-        .stdout(is_match("target/wasm32-wasi/debug/foo.wasm")?)
+        .stdout(is_match("target.wasm32-wasi.debug.foo.wasm")?)
         .stderr(is_match(
             "^\
 .*Compiling foo v1.0.0 .*
