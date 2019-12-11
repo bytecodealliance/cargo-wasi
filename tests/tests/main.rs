@@ -419,6 +419,116 @@ $",
 }
 
 #[test]
+fn run_override_runtime() -> Result<()> {
+    support::project()
+        .file("src/main.rs", "fn main() {}")
+        .override_runtime("wasmtime")
+        .build()
+        .cargo_wasi("run")
+        .assert()
+        .stdout("")
+        .stderr(is_match(
+            "^\
+.*Compiling foo v1.0.0 .*
+.*Finished dev .*
+.*Running `.*`
+.*Running `.*`
+$",
+        )?)
+        .success();
+
+    // override fails properly
+    support::project()
+        .file("src/main.rs", "fn main() {}")
+        .override_runtime(
+            "command-and-path-that-is-unlikely-to-exist-eac9cb6c-fa25-4487-b07f-38116cc6dade",
+        )
+        .build()
+        .cargo_wasi("run")
+        .assert()
+        .stdout("")
+        // error should include this environment variable
+        .stderr(is_match("CARGO_TARGET_WASM32_WASI_RUNNER")?)
+        .failure();
+
+    // override with a working runtime works
+    support::project()
+        .file(
+            "src/main.rs",
+            r#"
+                fn main() { println!("hello") }
+            "#,
+        )
+        .override_runtime("wasmtime")
+        .build()
+        .cargo_wasi("run")
+        .assert()
+        .stdout("hello\n")
+        .stderr(is_match(
+            "^\
+.*Compiling foo v1.0.0 .*
+.*Finished dev .*
+.*Running `.*`
+.*Running `.*`
+$",
+        )?)
+        .success();
+
+    let wasmtime_path = which::which("wasmtime")
+        .unwrap()
+        .to_string_lossy()
+        .to_string();
+    // override with a file path works
+    support::project()
+        .file(
+            "src/main.rs",
+            r#"
+                fn main() { println!("hello") }
+            "#,
+        )
+        .override_runtime(&wasmtime_path)
+        .build()
+        .cargo_wasi("run")
+        .assert()
+        .stdout("hello\n")
+        .stderr(is_match(
+            "^\
+.*Compiling foo v1.0.0 .*
+.*Finished dev .*
+.*Running `.*`
+.*Running `.*`
+$",
+        )?)
+        .success();
+
+    // override is not accidentally using wasmtime
+    // use the `echo` program to test this
+    support::project()
+        .file(
+            "src/main.rs",
+            r#"
+                fn main() { println!("hello") }
+            "#,
+        )
+        .override_runtime("echo")
+        .build()
+        .cargo_wasi("run")
+        .assert()
+        .stdout(is_match("target.wasm32-wasi.debug.foo.wasm")?)
+        .stderr(is_match(
+            "^\
+.*Compiling foo v1.0.0 .*
+.*Finished dev .*
+.*Running `.*`
+.*Running `.*`
+$",
+        )?)
+        .success();
+
+    Ok(())
+}
+
+#[test]
 fn run_forward_args() -> Result<()> {
     support::project()
         .file(

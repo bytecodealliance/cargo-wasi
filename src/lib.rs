@@ -106,14 +106,34 @@ fn rmain(config: &mut Config) -> Result<()> {
     // execute everything at the end.
     //
     // Also note that we check here before we actually build that a runtime is
-    // present, notably `wasmtime`.
+    // present. We first check the CARGO_TARGET_WASM32_WASI_RUNNER environement
+    // variable for a user-supplied runtime (path or executable) and use the
+    // default, namely `wasmtime`, if it is not set.
+    let (wasi_runner, using_default) = env::var("CARGO_TARGET_WASM32_WASI_RUNNER")
+        .map(|runner_override| (runner_override, false))
+        .unwrap_or_else(|_| ("wasmtime".to_string(), true));
+
     match subcommand {
         Subcommand::Run | Subcommand::Bench | Subcommand::Test => {
-            if which::which("wasmtime").is_err() {
+            if !using_default {
+                // check if the override is either a valid path or command found on $PATH
+                if !(Path::new(&wasi_runner).exists() || which::which(&wasi_runner).is_ok()) {
+                    bail!(
+                        "failed to find `{}` (specified by $CARGO_TARGET_WASM32_WASI_RUNNER) \
+                         on the filesytem or in $PATH, you'll want to fix the path or unset \
+                         the $CARGO_TARGET_WASM32_WASI_RUNNER environment variable before \
+                         running this command\n",
+                        &wasi_runner
+                    );
+                }
+            } else if which::which(&wasi_runner).is_err() {
                 let mut msg = format!(
-                    "failed to find `wasmtime` in $PATH, you'll want to \
-                     install `wasmtime` before running this command\n"
+                    "failed to find `{}` in $PATH, you'll want to \
+                     install `{}` before running this command\n",
+                    wasi_runner, wasi_runner
                 );
+                // Because we know what runtime is being used here, we can print
+                // out installation information.
                 if cfg!(unix) {
                     msg.push_str("you can also install through a shell:\n\n");
                     msg.push_str("\tcurl https://wasmtime.dev/install.sh -sSf | bash\n");
@@ -177,7 +197,7 @@ fn rmain(config: &mut Config) -> Result<()> {
 
     for run in build.runs.iter() {
         config.status("Running", &format!("`{}`", run.join(" ")));
-        Command::new("wasmtime")
+        Command::new(&wasi_runner)
             .arg("--")
             .args(run.iter())
             .run()

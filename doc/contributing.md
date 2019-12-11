@@ -10,7 +10,7 @@ https://github.com/bytecodealliance/cargo-wasi.
    installed](https://www.rust-lang.org/tools/install)
 
 2. Running tests requires [`wasmtime` is installed and in
-   `$PATH`](https://wasmtime.dev)
+   `$PATH`](https://wasmtime.dev) or an existing runtime provided via `CARGO_TARGET_WASM32_WASI_RUNNER`.
 
 ## Getting the code
 
