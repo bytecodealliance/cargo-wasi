@@ -1,12 +1,12 @@
 use crate::config::Config;
 use anyhow::{anyhow, bail, Context, Error, Result};
 use fs2::FileExt;
+use reqwest::blocking::{self, Response};
 use std::fmt;
 use std::fs;
 use std::fs::{File, OpenOptions};
 use std::path::Path;
 use std::process::{Command, ExitStatus, Output, Stdio};
-use reqwest::blocking::{self, Response};
 
 pub trait CommandExt {
     fn as_command_mut(&mut self) -> &mut Command;
