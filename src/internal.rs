@@ -52,7 +52,7 @@ fn update_available() -> Result<Option<Version>> {
     }
 
     let url = "https://crates.io/api/v1/crates/cargo-wasi";
-    let mut response = crate::utils::get(url)?;
+    let response = crate::utils::get(url)?;
     let json = response
         .json::<Info>()
         .context(format!("failed to decode json from `{}`", url))?;

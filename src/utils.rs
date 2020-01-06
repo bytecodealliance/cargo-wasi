@@ -6,6 +6,7 @@ use std::fs;
 use std::fs::{File, OpenOptions};
 use std::path::Path;
 use std::process::{Command, ExitStatus, Output, Stdio};
+use reqwest::blocking::{self, Response};
 
 pub trait CommandExt {
     fn as_command_mut(&mut self) -> &mut Command;
@@ -143,8 +144,8 @@ impl fmt::Display for ProcessError {
 
 impl std::error::Error for ProcessError {}
 
-pub fn get(url: &str) -> Result<reqwest::Response> {
-    let response = reqwest::get(url).context(format!("failed to fetch {}", url))?;
+pub fn get(url: &str) -> Result<Response> {
+    let response = blocking::get(url).context(format!("failed to fetch {}", url))?;
     if !response.status().is_success() {
         bail!(
             "failed to get successful response from {}: {}",
