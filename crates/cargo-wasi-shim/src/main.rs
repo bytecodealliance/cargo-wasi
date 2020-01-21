@@ -40,7 +40,7 @@ cfg_if::cfg_if! {
         fn cargo_wasi_main() { unreachable!() }
     } else {
         fn bytes() -> Option<&'static [u8]> { None }
-        fn cargo_wasi_main() { cargo_wasi_src::main() }
+        fn cargo_wasi_main() { cargo_wasi::main() }
     }
 }
 
