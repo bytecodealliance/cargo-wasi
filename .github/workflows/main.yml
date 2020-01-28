@@ -18,12 +18,6 @@ jobs:
     - name: Install Rust (rustup)
       run: rustup update stable --no-self-update && rustup default stable
       shell: bash
-      if: matrix.os != 'macos-latest'
-    - name: Install Rust (macos)
-      run: |
-        curl https://sh.rustup.rs | sh -s -- -y
-        echo ::add-path::$HOME/.cargo/bin
-      if: matrix.os == 'macos-latest'
 
     - name: Install wasmtime (macos)
       run: |
@@ -93,12 +87,6 @@ jobs:
     - name: Install Rust (rustup)
       run: rustup update stable --no-self-update && rustup default stable
       shell: bash
-      if: matrix.os != 'macos-latest'
-    - name: Install Rust (macos)
-      run: |
-        curl https://sh.rustup.rs | sh -s -- -y
-        echo ::add-path::$HOME/.cargo/bin
-      if: matrix.os == 'macos-latest'
     - run: rustup target add ${{ matrix.target }}
 
     # Target older versions of OSX (as old as we reasonably can) to ensure we
