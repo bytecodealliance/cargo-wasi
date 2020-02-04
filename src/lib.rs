@@ -672,7 +672,7 @@ fn run_or_download(
 }
 
 fn install_wasm_opt(path: &Path, config: &Config) -> Result<()> {
-    let tag = "1.39.1";
+    let tag = "version_90";
     let binaryen_url = |target: &str| {
         let mut url = "https://github.com/WebAssembly/binaryen/releases/download/".to_string();
         url.push_str(tag);
@@ -689,7 +689,7 @@ fn install_wasm_opt(path: &Path, config: &Config) -> Result<()> {
     } else if cfg!(target_os = "macos") && cfg!(target_arch = "x86_64") {
         binaryen_url("x86_64-apple-darwin")
     } else if cfg!(target_os = "windows") && cfg!(target_arch = "x86_64") {
-        binaryen_url("x86_64-windows")
+        binaryen_url("x86-windows")
     } else {
         bail!(
             "no precompiled binaries of `wasm-opt` are available for this \
