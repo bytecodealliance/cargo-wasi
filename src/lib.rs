@@ -689,7 +689,7 @@ fn install_wasm_opt(path: &Path, config: &Config) -> Result<()> {
     } else if cfg!(target_os = "macos") && cfg!(target_arch = "x86_64") {
         binaryen_url("x86_64-apple-darwin")
     } else if cfg!(target_os = "windows") && cfg!(target_arch = "x86_64") {
-        binaryen_url("x86_64-windows")
+        binaryen_url("x86-windows")
     } else {
         bail!(
             "no precompiled binaries of `wasm-opt` are available for this \
