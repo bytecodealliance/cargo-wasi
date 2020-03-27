@@ -657,7 +657,7 @@ thread 'main' panicked at 'test', src.main.rs.*
 note: run with `RUST_BACKTRACE=1` .*
 ",
         )?)
-        .code(1);
+        .failure();
     Ok(())
 }
 
