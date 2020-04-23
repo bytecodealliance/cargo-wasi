@@ -324,6 +324,7 @@ enum CargoMessage {
     RunWithArgs {
         args: Vec<String>,
     },
+    BuildFinished,
 }
 
 impl CargoBuild {
@@ -379,6 +380,7 @@ fn execute_cargo(cargo: &mut Command, config: &Config) -> Result<CargoBuild> {
             }
             Ok(CargoMessage::RunWithArgs { args }) => build.runs.push(args),
             Ok(CargoMessage::BuildScriptExecuted) => {}
+            Ok(CargoMessage::BuildFinished) => {}
             Err(e) => bail!("failed to parse {}: {}", line, e),
         }
     }
