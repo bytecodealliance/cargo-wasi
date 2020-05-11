@@ -50,4 +50,4 @@ which = "3.0"
 [dev-dependencies]
 assert_cmd = "1.0.0"
 predicates = "1.0.1"
-wasmparser = "0.52"
+wasmparser = "0.53"
