@@ -45,7 +45,7 @@ tempfile = "3"
 termcolor = "1.0.5"
 toml = "0.5"
 walrus = "0.17"
-which = "3.0"
+which = "4.0"
 
 [dev-dependencies]
 assert_cmd = "1.0.0"
