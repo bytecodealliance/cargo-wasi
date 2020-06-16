@@ -1,10 +1,10 @@
 name: CI
 on:
   push:
-    branches: [master]
+    branches: [main]
     tags: ['[0-9]*']
   pull_request:
-    branches: [master]
+    branches: [main]
 
 jobs:
   test:
@@ -14,7 +14,7 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
     steps:
-    - uses: actions/checkout@master
+    - uses: actions/checkout@v2
     - name: Install Rust (rustup)
       run: rustup update stable --no-self-update && rustup default stable
       shell: bash
@@ -51,7 +51,7 @@ jobs:
     name: Examples
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@master
+    - uses: actions/checkout@v2
     - name: Install Rust
       run: rustup update beta && rustup update stable && rustup default beta
     - run: cargo install --debug --path .
@@ -83,7 +83,7 @@ jobs:
             os: windows-latest
             ext: .exe
     steps:
-    - uses: actions/checkout@master
+    - uses: actions/checkout@v2
     - name: Install Rust (rustup)
       run: rustup update stable --no-self-update && rustup default stable
       shell: bash
@@ -121,7 +121,7 @@ jobs:
     name: Rustfmt
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@master
+    - uses: actions/checkout@v2
     - name: Install Rust
       run: rustup update stable && rustup default stable && rustup component add rustfmt
     - run: cargo fmt -- --check
@@ -130,7 +130,7 @@ jobs:
     name: Book Documentation
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@master
+    - uses: actions/checkout@v2
     - name: Install Rust
       run: rustup update stable && rustup default stable
     - name: Install mdbook
@@ -145,14 +145,14 @@ jobs:
         GITHUB_DEPLOY_KEY: ${{ secrets.GITHUB_DEPLOY_KEY }}
         BUILD_REPOSITORY_ID: ${{ github.repository }}
         BUILD_SOURCEVERSION: ${{ github.sha }}
-      if: github.event_name == 'push' && github.event.ref == 'refs/heads/master'
+      if: github.event_name == 'push' && github.event.ref == 'refs/heads/main'
 
   publish:
     name: Publish
     needs: build
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@master
+    - uses: actions/checkout@v2
     - name: Install Rust
       run: rustup update stable && rustup default stable
 
