@@ -31,7 +31,7 @@ exclude = ['tmp', 'target']
 [dependencies]
 anyhow = "1.0"
 atty = "0.2"
-dirs = "2.0.2"
+dirs = "3.0.0"
 flate2 = "1"
 fs2 = "0.4"
 reqwest = { version = "0.10", features = ["blocking", "json"] }
