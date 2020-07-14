@@ -111,17 +111,18 @@ fn rust_names_demangled() -> Result<()> {
 }
 
 fn assert_demangled(wasm: &[u8]) -> Result<()> {
-    let mut parser = wasmparser::ModuleReader::new(&wasm)?;
     let mut saw_name = false;
-    while !parser.eof() {
-        let section = parser.read()?;
-        match section.code {
-            wasmparser::SectionCode::Custom { name: "name", .. } => {}
+    for payload in wasmparser::Parser::new(0).parse_all(wasm) {
+        let mut reader = match payload? {
+            wasmparser::Payload::CustomSection {
+                name: "name",
+                data,
+                data_offset,
+            } => wasmparser::NameSectionReader::new(data, data_offset)?,
             _ => continue,
-        }
+        };
         saw_name = true;
 
-        let mut reader = section.get_name_section_reader()?;
         while !reader.eof() {
             let functions = match reader.read()? {
                 wasmparser::Name::Module(_) => continue,
@@ -721,10 +722,9 @@ fn name_section() -> Result<()> {
 
 fn custom_sections(bytes: &[u8]) -> Result<Vec<&str>> {
     let mut sections = Vec::new();
-    let mut parser = wasmparser::ModuleReader::new(&bytes)?;
-    while !parser.eof() {
-        match parser.read()?.code {
-            wasmparser::SectionCode::Custom { name, .. } => sections.push(name),
+    for payload in wasmparser::Parser::new(0).parse_all(bytes) {
+        match payload? {
+            wasmparser::Payload::CustomSection { name, .. } => sections.push(name),
             _ => {}
         }
     }
