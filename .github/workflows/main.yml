@@ -23,14 +23,14 @@ jobs:
       run: |
         set -e
         curl -L https://github.com/CraneStation/wasmtime/releases/download/dev/wasmtime-dev-x86_64-macos.tar.xz | tar xJf -
-        echo ::add-path::`pwd`/wasmtime-dev-x86_64-macos
+        echo `pwd`/wasmtime-dev-x86_64-macos >> $GITHUB_PATH
       if: matrix.os == 'macos-latest'
 
     - name: Install wasmtime (linux)
       run: |
         set -e
         curl -L https://github.com/CraneStation/wasmtime/releases/download/dev/wasmtime-dev-x86_64-linux.tar.xz | tar xJf -
-        echo ::add-path::`pwd`/wasmtime-dev-x86_64-linux
+        echo `pwd`/wasmtime-dev-x86_64-linux >> $GITHUB_PATH
       if: matrix.os == 'ubuntu-latest'
 
     - name: Install wasmtime (windows)
@@ -38,7 +38,7 @@ jobs:
         set -e
         curl -LO https://github.com/CraneStation/wasmtime/releases/download/dev/wasmtime-dev-x86_64-windows.zip
         unzip wasmtime-dev-x86_64-windows.zip
-        echo ::add-path::D:/a/cargo-wasi/cargo-wasi/wasmtime-dev-x86_64-windows
+        echo D:/a/cargo-wasi/cargo-wasi/wasmtime-dev-x86_64-windows >> $GITHUB_PATH
       shell: bash
       if: matrix.os == 'windows-latest'
 
@@ -92,12 +92,12 @@ jobs:
     # Target older versions of OSX (as old as we reasonably can) to ensure we
     # can run across a wide variety of systems.
     - name: Configure OSX deployment target
-      run: echo ::set-env name=MACOSX_DEPLOYMENT_TARGET::10.7
+      run: echo MACOSX_DEPLOYMENT_TARGET=10.7 >> $GITHUB_ENV
       if: matrix.os == 'macos-latest'
 
     # Don't link the CRT dynamically to increase our binary compatibility.
     - name: Configure Windows build flags
-      run: echo ::set-env name=RUSTFLAGS::-Ctarget-feature=+crt-static
+      run: echo RUSTFLAGS=-Ctarget-feature=+crt-static >> $GITHUB_ENV
       if: matrix.os == 'windows-latest'
 
     # Install a musl toolchain if we're on Linux
@@ -137,7 +137,7 @@ jobs:
       run: |
         set -e
         curl -L https://github.com/rust-lang-nursery/mdBook/releases/download/v0.3.0/mdbook-v0.3.0-x86_64-unknown-linux-gnu.tar.gz | tar xzf -
-        echo ::add-path::`pwd`
+        echo `pwd` >> $GITHUB_PATH
     - run: cd doc && mdbook build
     - name: Push to gh-pages
       run: curl -LsSf https://git.io/fhJ8n | rustc - && (cd doc/book && ../../rust_out)
@@ -174,8 +174,8 @@ jobs:
     # tag.
     - name: Configure release env vars
       run: |
-        echo ::set-env name=NO_DRY_RUN::1
-        echo ::set-env name=CARGO_REGISTRY_TOKEN::${{ secrets.CARGO_REGISTRY_TOKEN }}
+        echo NO_DRY_RUN=1 >> $GITHUB_ENV
+        echo CARGO_REGISTRY_TOKEN=${{ secrets.CARGO_REGISTRY_TOKEN }} >> $GITHUB_ENV
       if: github.event_name == 'push' && startsWith(github.event.ref, 'refs/tags')
 
     # Take all the input `*.crate` files and run various checks. Additionally
