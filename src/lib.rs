@@ -358,6 +358,10 @@ fn execute_cargo(cargo: &mut Command, config: &Config) -> Result<CargoBuild> {
 
     let mut build = CargoBuild::default();
     for line in json.lines() {
+        if !line.starts_with("{") {
+            println!("{}", line);
+            continue;
+        }
         match serde_json::from_str(line) {
             Ok(CargoMessage::CompilerArtifact {
                 filenames,

@@ -833,3 +833,29 @@ $",
         .success();
     Ok(())
 }
+
+#[test]
+fn verbose_build_script_works() -> Result<()> {
+    let p = support::project()
+        .file(
+            "Cargo.toml",
+            r#"
+                [package]
+                name = "foo"
+                version = "1.0.0"
+            "#,
+        )
+        .file("src/main.rs", "fn main() {}")
+        .file(
+            "build.rs",
+            r#"
+                fn main() {
+                    println!("hello");
+                }
+            "#,
+        )
+        .build();
+
+    p.cargo_wasi("build -vv").assert().success();
+    Ok(())
+}
