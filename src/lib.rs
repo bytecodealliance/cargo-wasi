@@ -678,7 +678,7 @@ fn run_or_download(
 }
 
 fn install_wasm_opt(path: &Path, config: &Config) -> Result<()> {
-    let tag = "version_92";
+    let tag = "version_97";
     let binaryen_url = |target: &str| {
         let mut url = "https://github.com/WebAssembly/binaryen/releases/download/".to_string();
         url.push_str(tag);
@@ -693,7 +693,7 @@ fn install_wasm_opt(path: &Path, config: &Config) -> Result<()> {
     let url = if cfg!(target_os = "linux") && cfg!(target_arch = "x86_64") {
         binaryen_url("x86_64-linux")
     } else if cfg!(target_os = "macos") && cfg!(target_arch = "x86_64") {
-        binaryen_url("x86_64-apple-darwin")
+        binaryen_url("x86_64-macos")
     } else if cfg!(target_os = "windows") && cfg!(target_arch = "x86_64") {
         binaryen_url("x86-windows")
     } else {
