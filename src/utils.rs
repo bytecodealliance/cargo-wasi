@@ -1,7 +1,8 @@
 use crate::config::Config;
 use anyhow::{anyhow, bail, Context, Error, Result};
 use fs2::FileExt;
-use reqwest::blocking::{self, Response};
+use reqwest::blocking::{Client, Response};
+use reqwest::header::USER_AGENT;
 use std::fmt;
 use std::fs;
 use std::fs::{File, OpenOptions};
@@ -145,7 +146,15 @@ impl fmt::Display for ProcessError {
 impl std::error::Error for ProcessError {}
 
 pub fn get(url: &str) -> Result<Response> {
-    let response = blocking::get(url).context(format!("failed to fetch {}", url))?;
+    let client = Client::new();
+    let response = client
+        .get(url)
+        .header(
+            USER_AGENT,
+            format!("cargo-wasi/v{}", env!("CARGO_PKG_VERSION")),
+        )
+        .send()
+        .context(format!("failed to fetch {}", url))?;
     if !response.status().is_success() {
         bail!(
             "failed to get successful response from {}: {}",
