@@ -118,6 +118,7 @@ fn assert_demangled(wasm: &[u8]) -> Result<()> {
                 name: "name",
                 data,
                 data_offset,
+                ..
             } => wasmparser::NameSectionReader::new(data, data_offset)?,
             _ => continue,
         };
@@ -128,6 +129,7 @@ fn assert_demangled(wasm: &[u8]) -> Result<()> {
                 wasmparser::Name::Module(_) => continue,
                 wasmparser::Name::Function(f) => f,
                 wasmparser::Name::Local(_) => continue,
+                wasmparser::Name::Unknown { .. } => continue,
             };
             let mut map = functions.get_map()?;
             for _ in 0..map.get_count() {
