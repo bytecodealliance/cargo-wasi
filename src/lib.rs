@@ -4,7 +4,9 @@ use crate::utils::CommandExt;
 use anyhow::{bail, Context, Result};
 
 use reqwest::blocking::Response;
+use std::collections::HashMap;
 use std::env;
+use std::ffi::OsString;
 use std::fs;
 use std::io::{self, Read};
 use std::path::{Path, PathBuf};
@@ -81,17 +83,35 @@ fn rmain(config: &mut Config) -> Result<()> {
         Subcommand::Run => "run",
     });
 
-    // TODO: figure out when these flags are already passed to `cargo` and skip
+    // figure out when these flags are already passed to `cargo` and skip
     // passing them ourselves.
-    cargo.arg("--target").arg("wasm32-wasi");
-    cargo.arg("--message-format").arg("json-render-diagnostics");
-    for arg in args {
+    let mut default_args = HashMap::from([
+        ("--target", "wasm32-wasi"),
+        ("--message-format", "json-render-diagnostics"),
+    ]);
+    let args: Vec<OsString> = args.collect();
+    let mut next_args: Vec<OsString> = Vec::new();
+    let mut index = 0_usize;
+    while let Some(arg) = args.get(index) {
         if let Some(arg) = arg.to_str() {
+            if let Some(next_arg) = args.get(index + 1).and_then(|arg| arg.to_str()) {
+                if default_args.get(arg).is_some() && !next_arg.starts_with("-") {
+                    default_args.insert(arg, next_arg);
+                    index += 2;
+                    continue;
+                }
+            }
             if arg.starts_with("--verbose") || arg.starts_with("-v") {
                 config.set_verbose(true);
             }
         }
-
+        next_args.push(arg.clone());
+        index += 1;
+    }
+    for (arg_name, arg_value) in default_args {
+        cargo.arg(arg_name).arg(arg_value);
+    }
+    for arg in next_args {
         cargo.arg(arg);
     }
 
