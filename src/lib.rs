@@ -2,6 +2,8 @@ use crate::cache::Cache;
 use crate::config::Config;
 use crate::utils::CommandExt;
 use anyhow::{bail, Context, Result};
+
+use reqwest::blocking::Response;
 use std::env;
 use std::fs;
 use std::io::{self, Read};
@@ -531,6 +533,31 @@ fn install_wasm_bindgen(version: &str, path: &Path, config: &Config) -> Result<(
             &format!("precompiled wasm-bindgen v{}", version),
             path,
             config,
+            |response: &mut Response| -> Result<()> {
+                let parent = path.parent().unwrap();
+                let filename = path.file_name().unwrap();
+                fs::create_dir_all(parent)
+                    .context(format!("failed to create directory `{}`", parent.display()))?;
+
+                let decompressed = flate2::read::GzDecoder::new(response);
+                let mut tar = tar::Archive::new(decompressed);
+
+                for entry in tar.entries()? {
+                    let mut entry = entry?;
+                    let entry_path = entry.path()?;
+
+                    if entry_path.ends_with(filename) {
+                        // bin
+                        entry.unpack(path)?;
+                    }
+                }
+
+                if !path.exists() {
+                    bail!("failed to download wasm-bindgen");
+                }
+
+                Ok(())
+            },
         )
     };
 
@@ -599,6 +626,9 @@ fn run_wasm_opt(
     let input = tempdir.path().join("input.wasm");
     fs::write(&input, &bytes)?;
     let mut cmd = Command::new(&wasm_opt);
+    let ld_library_path = config.get_ld_library_path();
+    let ld_library_path = ld_library_path.as_os_str().to_str().unwrap();
+    cmd.env("LD_LIBRARY_PATH", ld_library_path);
     cmd.arg(&input);
     cmd.arg(format!("-O{}", profile.opt_level));
     cmd.arg("-o").arg(wasm);
@@ -705,10 +735,54 @@ fn install_wasm_opt(path: &Path, config: &Config) -> Result<()> {
         )
     };
 
-    download(&url, &format!("precompiled wasm-opt {}", tag), path, config)
+    download(
+        &url,
+        &format!("precompiled wasm-opt {}", tag),
+        path,
+        config,
+        |response: &mut Response| -> Result<()> {
+            let parent = path.parent().unwrap();
+            let filename = path.file_name().unwrap();
+            let lib_directory = config.get_ld_library_path();
+
+            for dir in [parent, lib_directory.as_path()] {
+                fs::create_dir_all(dir)
+                    .context(format!("failed to create directory `{}`", parent.display()))?;
+            }
+
+            let decompressed = flate2::read::GzDecoder::new(response);
+            let mut tar = tar::Archive::new(decompressed);
+
+            for entry in tar.entries()? {
+                let mut entry = entry?;
+                let entry_path = entry.path()?;
+
+                if entry_path.ends_with(filename) {
+                    // bin
+                    entry.unpack(path)?;
+                } else if ["dylib", "a"]
+                    .iter()
+                    .any(|ext| entry_path.extension().and_then(|v| v.to_str()) == Some(ext))
+                {
+                    // lib
+                    let dst = &lib_directory.join(&entry_path.file_name().unwrap());
+                    entry.unpack(dst.as_path())?;
+                }
+            }
+
+            if !path.exists() {
+                bail!("failed to download wasm-opt binary");
+            }
+
+            Ok(())
+        },
+    )
 }
 
-fn download(url: &str, name: &str, path: &Path, config: &Config) -> Result<()> {
+fn download<F>(url: &str, name: &str, path: &Path, config: &Config, after_download: F) -> Result<()>
+where
+    F: Fn(&mut Response) -> Result<()>,
+{
     // Globally lock ourselves downloading things to coordinate with any other
     // instances of `cargo-wasi` doing a download. This is a bit coarse, but it
     // gets the job done. Additionally if someone else does the download for us
@@ -719,28 +793,10 @@ fn download(url: &str, name: &str, path: &Path, config: &Config) -> Result<()> {
     }
 
     // Ok, let's actually do the download
-    let parent = path.parent().unwrap();
-    let filename = path.file_name().unwrap();
     config.status("Downloading", name);
     config.verbose(|| config.status("Get", &url));
 
-    let response = utils::get(url)?;
-    (|| -> Result<()> {
-        fs::create_dir_all(parent)
-            .context(format!("failed to create directory `{}`", parent.display()))?;
-
-        let decompressed = flate2::read::GzDecoder::new(response);
-        let mut tar = tar::Archive::new(decompressed);
-        for entry in tar.entries()? {
-            let mut entry = entry?;
-            if !entry.path()?.ends_with(filename) {
-                continue;
-            }
-            entry.unpack(path)?;
-            return Ok(());
-        }
-
-        bail!("failed to find {:?} in archive", filename);
-    })()
-    .context(format!("failed to extract tarball from {}", url))
+    let mut response = utils::get(url)?;
+    after_download(&mut response)
+        .context(format!("fail to do after download operation for {}", url))
 }
