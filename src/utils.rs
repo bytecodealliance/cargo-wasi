@@ -3,11 +3,12 @@ use anyhow::{anyhow, bail, Context, Error, Result};
 use fs2::FileExt;
 use reqwest::blocking::{Client, Response};
 use reqwest::header::USER_AGENT;
-use std::fmt;
+use reqwest::Proxy;
 use std::fs;
 use std::fs::{File, OpenOptions};
 use std::path::Path;
 use std::process::{Command, ExitStatus, Output, Stdio};
+use std::{env, fmt};
 
 pub trait CommandExt {
     fn as_command_mut(&mut self) -> &mut Command;
@@ -145,8 +146,28 @@ impl fmt::Display for ProcessError {
 
 impl std::error::Error for ProcessError {}
 
+/// Finds an HTTP proxy, in order:
+/// * `http_proxy` env var
+/// * `HTTP_PROXY` env var
+/// * `https_proxy` env var
+/// * `HTTPS_PROXY` env var
+fn get_http_proxy() -> Option<String> {
+    ["http_proxy", "HTTP_PROXY", "https_proxy", "HTTPS_PROXY"]
+        .iter()
+        .map(|v| env::var(v))
+        .find(|v| v.is_ok())
+        .and_then(|v| v.ok())
+}
+
 pub fn get(url: &str) -> Result<Response> {
-    let client = Client::new();
+    let mut client = Client::builder();
+    if let Some(proxy_url) = get_http_proxy() {
+        if let Ok(proxy) = Proxy::all(&proxy_url) {
+            client = client.proxy(proxy);
+        }
+    }
+    let client = client.build()?;
+
     let response = client
         .get(url)
         .header(
