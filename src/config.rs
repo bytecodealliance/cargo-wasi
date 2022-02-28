@@ -92,7 +92,7 @@ impl Config {
     /// `wasm-bindgen` used, or `WASM_OPT=path/to/wasm-opt` for `wasm-opt`.  or
     /// the `cache` as the fallback.
     fn get_tool(&self, tool: &str, version: Option<&str>) -> (PathBuf, PathBuf) {
-        let mut cache_path = self.cache().root().join(tool);
+        let mut cache_path = self.cache().root().join("bin").join(tool);
         if let Some(v) = version {
             cache_path.push(v);
             cache_path.push(tool)
@@ -104,6 +104,10 @@ impl Config {
         } else {
             (cache_path.clone(), cache_path)
         }
+    }
+
+    pub fn get_ld_library_path(&self) -> PathBuf {
+        self.cache().root().join("lib")
     }
 
     /// Get the path to our `wasm-bindgen` tool for the given version, and the

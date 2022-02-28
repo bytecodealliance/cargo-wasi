@@ -56,14 +56,17 @@ jobs:
       run: rustup update beta && rustup update stable && rustup default beta
     - run: cargo install --debug --path .
 
+    # target `wasm32-unknown-unknown` will not be installed automatically
+    - run: rustup target add wasm32-unknown-unknown
+
     # Verify that we can switch between channels (stable/beta) and we'll
     # automatically get the wasi target on both.
     - run: (cd examples/hello-world && cargo +stable wasi build --release -v)
     - run: (cd examples/hello-world && cargo +beta wasi build --release -v)
 
-    # Run this twice just to make sure it's fresh the second time
-    - run: (cd examples/markdown && cargo wasi build --release -v)
-    - run: (cd examples/markdown && cargo wasi build --release -v)
+    # Run this twice just to make sure it's fresh the second time, and verify that we can override arguments
+    - run: (cd examples/markdown && cargo wasi build --release -v --target wasm32-unknown-unknown)
+    - run: (cd examples/markdown && cargo wasi build --release -v --target wasm32-unknown-unknown)
 
   build:
     name: Build
