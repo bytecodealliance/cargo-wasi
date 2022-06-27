@@ -694,7 +694,7 @@ fn run_or_download(
 }
 
 fn install_wasm_opt(path: &Path, config: &Config) -> Result<()> {
-    let tag = "version_97";
+    let tag = "version_109";
     let binaryen_url = |target: &str| {
         let mut url = "https://github.com/WebAssembly/binaryen/releases/download/".to_string();
         url.push_str(tag);
