@@ -152,7 +152,7 @@ fn rmain(config: &mut Config) -> Result<()> {
                     msg.push_str("\tcurl https://wasmtime.dev/install.sh -sSf | bash\n");
                 } else {
                     msg.push_str("you can also install through the installer:\n\n");
-                    msg.push_str("\thttps://github.com/CraneStation/wasmtime/releases/download/dev/wasmtime-dev-x86_64-windows.msi\n");
+                    msg.push_str("\thttps://github.com/bytecodealliance/wasmtime/releases/download/dev/wasmtime-dev-x86_64-windows.msi\n");
                 }
                 bail!("{}", msg);
             }
