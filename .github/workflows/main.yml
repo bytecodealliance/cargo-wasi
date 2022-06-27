@@ -63,10 +63,6 @@ jobs:
     - run: (cd examples/hello-world && cargo +stable wasi build --release -v)
     - run: (cd examples/hello-world && cargo +beta wasi build --release -v)
 
-    # Run this twice just to make sure it's fresh the second time
-    - run: (cd examples/markdown && cargo wasi build --release -v)
-    - run: (cd examples/markdown && cargo wasi build --release -v)
-
   build:
     name: Build
     runs-on: ${{ matrix.os }}
