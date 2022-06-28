@@ -23,7 +23,6 @@ name = "cargo_wasi"
 members = [
   'crates/assemble',
   'crates/cargo-wasi-shim',
-  'examples/markdown',
   'examples/hello-world',
 ]
 exclude = ['tmp', 'target']

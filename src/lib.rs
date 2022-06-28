@@ -1,7 +1,7 @@
 use crate::cache::Cache;
 use crate::config::Config;
 use crate::utils::CommandExt;
-use anyhow::{bail, Context, Result};
+use anyhow::{anyhow, bail, Context, Result};
 use std::env;
 use std::fs;
 use std::io::{self, Read};
@@ -113,6 +113,19 @@ fn rmain(config: &mut Config) -> Result<()> {
         .map(|runner_override| (runner_override, false))
         .unwrap_or_else(|_| ("wasmtime".to_string(), true));
 
+    // Treat the wasi_runner variable as an exectable, followed by a whitespace-
+    // separated list of arguments to the executable. This allows the user to
+    // provide arguments which are passed to wasmtime without having to add more
+    // command-line argument parsing to this crate.
+    let (wasi_runner, wasi_runner_extra_args) = {
+        let mut words = wasi_runner.split_whitespace();
+        let runner = words
+            .next()
+            .ok_or_else(|| anyhow!("$CARGO_TARGET_WASM32_WASI_RUNNER must not be empty"))?;
+        let extra_args = words.collect::<Vec<_>>();
+        (runner, extra_args)
+    };
+
     match subcommand {
         Subcommand::Run | Subcommand::Bench | Subcommand::Test => {
             if !using_default {
@@ -139,7 +152,7 @@ fn rmain(config: &mut Config) -> Result<()> {
                     msg.push_str("\tcurl https://wasmtime.dev/install.sh -sSf | bash\n");
                 } else {
                     msg.push_str("you can also install through the installer:\n\n");
-                    msg.push_str("\thttps://github.com/CraneStation/wasmtime/releases/download/dev/wasmtime-dev-x86_64-windows.msi\n");
+                    msg.push_str("\thttps://github.com/bytecodealliance/wasmtime/releases/download/dev/wasmtime-dev-x86_64-windows.msi\n");
                 }
                 bail!("{}", msg);
             }
@@ -197,8 +210,11 @@ fn rmain(config: &mut Config) -> Result<()> {
 
     for run in build.runs.iter() {
         config.status("Running", &format!("`{}`", run.join(" ")));
-        Command::new(&wasi_runner)
-            .arg("--")
+        let mut cmd = Command::new(&wasi_runner);
+        for extra_arg in wasi_runner_extra_args.iter() {
+            cmd.arg(extra_arg);
+        }
+        cmd.arg("--")
             .args(run.iter())
             .run()
             .map_err(|e| utils::hide_normal_process_exit(e, config))?;
@@ -678,7 +694,7 @@ fn run_or_download(
 }
 
 fn install_wasm_opt(path: &Path, config: &Config) -> Result<()> {
-    let tag = "version_97";
+    let tag = "version_109";
     let binaryen_url = |target: &str| {
         let mut url = "https://github.com/WebAssembly/binaryen/releases/download/".to_string();
         url.push_str(tag);

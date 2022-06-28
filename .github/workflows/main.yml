@@ -9,6 +9,8 @@ on:
 jobs:
   test:
     name: Test
+    env:
+      WASMTIME_RELEASE: v0.38.0
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -21,24 +23,24 @@ jobs:
 
     - name: Install wasmtime (macos)
       run: |
-        set -e
-        curl -L https://github.com/CraneStation/wasmtime/releases/download/dev/wasmtime-dev-x86_64-macos.tar.xz | tar xJf -
-        echo `pwd`/wasmtime-dev-x86_64-macos >> $GITHUB_PATH
+        set -ex
+        curl -L https://github.com/bytecodealliance/wasmtime/releases/download/$WASMTIME_RELEASE/wasmtime-$WASMTIME_RELEASE-x86_64-macos.tar.xz | tar xJf -
+        echo `pwd`/wasmtime-$WASMTIME_RELEASE-x86_64-macos >> $GITHUB_PATH
       if: matrix.os == 'macos-latest'
 
     - name: Install wasmtime (linux)
       run: |
-        set -e
-        curl -L https://github.com/CraneStation/wasmtime/releases/download/dev/wasmtime-dev-x86_64-linux.tar.xz | tar xJf -
-        echo `pwd`/wasmtime-dev-x86_64-linux >> $GITHUB_PATH
+        set -ex
+        curl -L https://github.com/bytecodealliance/wasmtime/releases/download/$WASMTIME_RELEASE/wasmtime-$WASMTIME_RELEASE-x86_64-linux.tar.xz | tar xJf -
+        echo `pwd`/wasmtime-$WASMTIME_RELEASE-x86_64-linux >> $GITHUB_PATH
       if: matrix.os == 'ubuntu-latest'
 
     - name: Install wasmtime (windows)
       run: |
-        set -e
-        curl -LO https://github.com/CraneStation/wasmtime/releases/download/dev/wasmtime-dev-x86_64-windows.zip
-        unzip wasmtime-dev-x86_64-windows.zip
-        echo D:/a/cargo-wasi/cargo-wasi/wasmtime-dev-x86_64-windows >> $GITHUB_PATH
+        set -ex
+        curl -LO https://github.com/bytecodealliance/wasmtime/releases/download/$WASMTIME_RELEASE/wasmtime-$WASMTIME_RELEASE-x86_64-windows.zip
+        unzip wasmtime-$WASMTIME_RELEASE-x86_64-windows.zip
+        echo D:/a/cargo-wasi/cargo-wasi/wasmtime-$WASMTIME_RELEASE-x86_64-windows >> $GITHUB_PATH
       shell: bash
       if: matrix.os == 'windows-latest'
 
@@ -60,10 +62,6 @@ jobs:
     # automatically get the wasi target on both.
     - run: (cd examples/hello-world && cargo +stable wasi build --release -v)
     - run: (cd examples/hello-world && cargo +beta wasi build --release -v)
-
-    # Run this twice just to make sure it's fresh the second time
-    - run: (cd examples/markdown && cargo wasi build --release -v)
-    - run: (cd examples/markdown && cargo wasi build --release -v)
 
   build:
     name: Build
