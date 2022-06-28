@@ -145,7 +145,7 @@ fn main() -> anyhow::Result<()> {
             }
         } else {
             // give crates.io a chance to propagate the index change
-            std::thread::sleep(std::time::Duration::from_secs(15));
+            std::thread::sleep(std::time::Duration::from_secs(60));
         }
         let status = cmd.status().context("failed to spawn `cargo`")?;
         if !status.success() {
