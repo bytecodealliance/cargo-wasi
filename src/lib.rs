@@ -629,13 +629,9 @@ fn run_wasm_opt(
         cmd.arg("--strip-producers");
     }
 
-    run_or_download(
-        wasm_opt.as_ref(),
-        is_overridden,
-        &mut cmd,
-        config,
-        || install_wasm_opt(wasm_opt.as_ref(), config),
-    )
+    run_or_download(wasm_opt.as_ref(), is_overridden, &mut cmd, config, || {
+        install_wasm_opt(wasm_opt.as_ref(), config)
+    })
     .context("`wasm-opt` failed to execute")?;
     Ok(())
 }
