@@ -498,7 +498,7 @@ fn run_wasm_bindgen(
 ) -> Result<()> {
     let tempdir = tempfile::TempDir::new_in(wasm.parent().unwrap())
         .context("failed to create temporary directory")?;
-    let (wasm_bindgen, cache_wasm_bindgen) = config.get_wasm_bindgen(bindgen_version);
+    let (wasm_bindgen, is_overridden) = config.get_wasm_bindgen(bindgen_version);
 
     let mut cmd = Command::new(&wasm_bindgen);
     cmd.arg(temp);
@@ -517,7 +517,7 @@ fn run_wasm_bindgen(
 
     run_or_download(
         wasm_bindgen.as_ref(),
-        &cache_wasm_bindgen,
+        is_overridden,
         &mut cmd,
         config,
         || install_wasm_bindgen(bindgen_version, wasm_bindgen.as_ref(), config),
@@ -610,7 +610,7 @@ fn run_wasm_opt(
     config.status("Optimizing", "with wasm-opt");
     let tempdir = tempfile::TempDir::new_in(wasm.parent().unwrap())
         .context("failed to create temporary directory")?;
-    let (wasm_opt, cached_wasm_opt) = config.get_wasm_opt();
+    let (wasm_opt, is_overridden) = config.get_wasm_opt();
 
     let input = tempdir.path().join("input.wasm");
     fs::write(&input, &bytes)?;
@@ -631,7 +631,7 @@ fn run_wasm_opt(
 
     run_or_download(
         wasm_opt.as_ref(),
-        cached_wasm_opt.as_ref(),
+        is_overridden,
         &mut cmd,
         config,
         || install_wasm_opt(wasm_opt.as_ref(), config),
@@ -650,7 +650,7 @@ fn run_wasm_opt(
 /// Additionally nice diagnostics and such are printed along the way.
 fn run_or_download(
     requested: &Path,
-    cache: &Path,
+    is_overridden: bool,
     cmd: &mut Command,
     config: &Config,
     download: impl FnOnce() -> Result<()>,
@@ -682,7 +682,7 @@ fn run_or_download(
     // This may have failed for some reason other than `NotFound`, in which case
     // it's a legitimate error. Additionally `requested` may not actually be a
     // path that we download, in which case there's also nothing that we can do.
-    if !rerun_after_download || requested != cache {
+    if !rerun_after_download || is_overridden {
         return Err(err);
     }
 
