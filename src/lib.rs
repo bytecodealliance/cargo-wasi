@@ -545,7 +545,8 @@ fn install_wasm_bindgen(version: &str, path: &Path, config: &Config) -> Result<(
         download(
             &url,
             &format!("precompiled wasm-bindgen v{}", version),
-            path,
+            path.parent().unwrap(),
+            &vec![PathBuf::from(path.file_name().unwrap())],
             config,
         )
     };
@@ -717,22 +718,35 @@ fn install_wasm_opt(path: &Path, config: &Config) -> Result<()> {
         )
     };
 
-    download(&url, &format!("precompiled wasm-opt {}", tag), path, config)
+    download(
+        &url,
+        &format!("precompiled wasm-opt {}", tag),
+        path.parent().unwrap(),
+        &vec![PathBuf::from(path.file_name().unwrap())],
+        config,
+    )
 }
 
-fn download(url: &str, name: &str, path: &Path, config: &Config) -> Result<()> {
+fn download(
+    url: &str,
+    name: &str,
+    parent: &Path,
+    sub_paths: &Vec<PathBuf>,
+    config: &Config,
+) -> Result<()> {
     // Globally lock ourselves downloading things to coordinate with any other
     // instances of `cargo-wasi` doing a download. This is a bit coarse, but it
     // gets the job done. Additionally if someone else does the download for us
     // then we can simply return.
     let _flock = utils::flock(&config.cache().root().join("downloading"));
-    if path.exists() {
+    if sub_paths
+        .iter()
+        .all(|sub_path| parent.join(sub_path).exists())
+    {
         return Ok(());
     }
 
     // Ok, let's actually do the download
-    let parent = path.parent().unwrap();
-    let filename = path.file_name().unwrap();
     config.status("Downloading", name);
     config.verbose(|| config.status("Get", &url));
 
@@ -745,14 +759,27 @@ fn download(url: &str, name: &str, path: &Path, config: &Config) -> Result<()> {
         let mut tar = tar::Archive::new(decompressed);
         for entry in tar.entries()? {
             let mut entry = entry?;
-            if !entry.path()?.ends_with(filename) {
-                continue;
+            let path = entry.path()?.into_owned();
+            for sub_path in sub_paths {
+                if path.ends_with(sub_path) {
+                    let entry_path = parent.join(sub_path);
+                    let dir = entry_path.parent().unwrap();
+                    if !dir.exists() {
+                        fs::create_dir_all(dir)
+                            .context(format!("failed to create directory `{}`", dir.display()))?;
+                    }
+                    entry.unpack(entry_path)?;
+                }
             }
-            entry.unpack(path)?;
-            return Ok(());
         }
 
-        bail!("failed to find {:?} in archive", filename);
+        for missing in sub_paths
+            .iter()
+            .filter(|sub_path| !parent.join(sub_path).exists())
+        {
+            bail!("failed to find {:?} in archive", missing);
+        }
+        Ok(())
     })()
     .context(format!("failed to extract tarball from {}", url))
 }
