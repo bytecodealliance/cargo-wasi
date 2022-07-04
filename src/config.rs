@@ -127,11 +127,16 @@ impl Config {
             let mut bin = ["bin", "wasm-opt"].iter().collect::<PathBuf>();
             bin.set_extension(std::env::consts::EXE_EXTENSION);
 
-            let mut archive = ["lib", "libbinaryen"].iter().collect::<PathBuf>();
-            archive.set_extension(std::env::consts::DLL_EXTENSION);
-
             let bin_path = path.join(&bin);
-            let sub_paths = vec![bin, archive];
+            let mut sub_paths = vec![bin];
+
+            // wasm-opt on MacOS requires a dylib to execute
+            if cfg!(target_os = "macos") {
+                let mut dylib = ["lib", "libbinaryen"].iter().collect::<PathBuf>();
+                dylib.set_extension(std::env::consts::DLL_EXTENSION);
+                sub_paths.push(dylib);
+            }
+
             ToolPath::Cached {
                 bin_path,
                 base: path,
