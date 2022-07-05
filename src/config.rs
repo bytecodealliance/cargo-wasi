@@ -1,4 +1,4 @@
-use crate::Cache;
+use crate::{Cache, ToolPath};
 use anyhow::Result;
 use std::path::PathBuf;
 use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
@@ -99,8 +99,6 @@ impl Config {
                 cache_path.push(v);
                 cache_path.push(tool)
             }
-            cache_path.set_extension(std::env::consts::EXE_EXTENSION);
-
             (cache_path, false)
         }
     }
@@ -111,7 +109,11 @@ impl Config {
     ///
     /// Overridable via setting the `WASM_BINDGEN=path/to/wasm-bindgen` env var.
     pub fn get_wasm_bindgen(&self, version: &str) -> (PathBuf, bool) {
-        self.get_tool("wasm-bindgen", Some(version))
+        let (mut path, is_overridden) = self.get_tool("wasm-bindgen", Some(version));
+        if !is_overridden {
+            path.set_extension(std::env::consts::EXE_EXTENSION);
+        }
+        (path, is_overridden)
     }
 
     /// Get the path to our `wasm-opt`, which may be the cache path where it
@@ -119,7 +121,29 @@ impl Config {
     /// overridden.
     ///
     /// Overridable via setting the `WASM_OPT=path/to/wasm-opt` env var.
-    pub fn get_wasm_opt(&self) -> (PathBuf, bool) {
-        self.get_tool("wasm-opt", None)
+    pub fn get_wasm_opt(&self) -> ToolPath {
+        let (path, is_overridden) = self.get_tool("wasm-opt", None);
+        if !is_overridden {
+            let mut bin = ["bin", "wasm-opt"].iter().collect::<PathBuf>();
+            bin.set_extension(std::env::consts::EXE_EXTENSION);
+
+            let bin_path = path.join(&bin);
+            let mut sub_paths = vec![bin];
+
+            // wasm-opt on MacOS requires a dylib to execute
+            if cfg!(target_os = "macos") {
+                let mut dylib = ["lib", "libbinaryen"].iter().collect::<PathBuf>();
+                dylib.set_extension(std::env::consts::DLL_EXTENSION);
+                sub_paths.push(dylib);
+            }
+
+            ToolPath::Cached {
+                bin_path,
+                base: path,
+                sub_paths,
+            }
+        } else {
+            ToolPath::Overridden(path)
+        }
     }
 }

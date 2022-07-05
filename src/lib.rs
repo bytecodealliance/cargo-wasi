@@ -1,5 +1,6 @@
 use crate::cache::Cache;
 use crate::config::Config;
+use crate::tool_path::ToolPath;
 use crate::utils::CommandExt;
 use anyhow::{anyhow, bail, Context, Result};
 use std::env;
@@ -11,6 +12,7 @@ use std::process::{Command, Stdio};
 mod cache;
 mod config;
 mod internal;
+mod tool_path;
 mod utils;
 
 pub fn main() {
@@ -611,11 +613,11 @@ fn run_wasm_opt(
     config.status("Optimizing", "with wasm-opt");
     let tempdir = tempfile::TempDir::new_in(wasm.parent().unwrap())
         .context("failed to create temporary directory")?;
-    let (wasm_opt, is_overridden) = config.get_wasm_opt();
+    let wasm_opt = config.get_wasm_opt();
 
     let input = tempdir.path().join("input.wasm");
     fs::write(&input, &bytes)?;
-    let mut cmd = Command::new(&wasm_opt);
+    let mut cmd = Command::new(wasm_opt.bin_path());
     cmd.arg(&input);
     cmd.arg(format!("-O{}", profile.opt_level));
     cmd.arg("-o").arg(wasm);
@@ -630,9 +632,13 @@ fn run_wasm_opt(
         cmd.arg("--strip-producers");
     }
 
-    run_or_download(wasm_opt.as_ref(), is_overridden, &mut cmd, config, || {
-        install_wasm_opt(wasm_opt.as_ref(), config)
-    })
+    run_or_download(
+        wasm_opt.bin_path(),
+        wasm_opt.is_overridden(),
+        &mut cmd,
+        config,
+        || install_wasm_opt(&wasm_opt, config),
+    )
     .context("`wasm-opt` failed to execute")?;
     Ok(())
 }
@@ -690,7 +696,7 @@ fn run_or_download(
     cmd.run()
 }
 
-fn install_wasm_opt(path: &Path, config: &Config) -> Result<()> {
+fn install_wasm_opt(path: &ToolPath, config: &Config) -> Result<()> {
     let tag = "version_109";
     let binaryen_url = |target: &str| {
         let mut url = "https://github.com/WebAssembly/binaryen/releases/download/".to_string();
@@ -707,6 +713,8 @@ fn install_wasm_opt(path: &Path, config: &Config) -> Result<()> {
         binaryen_url("x86_64-linux")
     } else if cfg!(target_os = "macos") && cfg!(target_arch = "x86_64") {
         binaryen_url("x86_64-macos")
+    } else if cfg!(target_os = "macos") && cfg!(target_arch = "aarch64") {
+        binaryen_url("arm64-macos")
     } else if cfg!(target_os = "windows") && cfg!(target_arch = "x86_64") {
         binaryen_url("x86_64-windows")
     } else {
@@ -718,11 +726,12 @@ fn install_wasm_opt(path: &Path, config: &Config) -> Result<()> {
         )
     };
 
+    let (base_path, sub_paths) = path.cache_paths().unwrap();
     download(
         &url,
         &format!("precompiled wasm-opt {}", tag),
-        path.parent().unwrap(),
-        &vec![PathBuf::from(path.file_name().unwrap())],
+        base_path,
+        sub_paths,
         config,
     )
 }
