@@ -48,6 +48,8 @@ fn main() -> anyhow::Result<()> {
             let status = Command::new("tar")
                 .arg("xf")
                 .arg(krate.canonicalize().context("failed to canonicalize")?)
+                .arg("--exclude")
+                .arg("Cargo.toml.orig")
                 .current_dir(&tmp)
                 .status()
                 .context("failed to spawn `tar`")?;
