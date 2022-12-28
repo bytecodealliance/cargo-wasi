@@ -585,6 +585,54 @@ $",
 }
 
 #[test]
+fn test_read_file() -> Result<()> {
+    support::project()
+        .file("tests/data.txt", "42")
+        .file(
+            "src/lib.rs",
+            r#"
+use std::fs;
+use std::io;
+use std::path::Path;
+#[allow(dead_code)]
+fn readfile() -> Result<String, io::Error> {
+    let contents = fs::read_to_string(Path::new("tests/data.txt"))
+    .expect("Should have been able to read the file");
+    Ok(contents)
+}
+
+#[test]
+fn read() {
+    let contents = readfile().unwrap();
+    assert_eq!(contents, "42");
+}
+            "#,
+        )
+        .build()
+        .cargo_wasi("test")
+        .assert()
+        .stdout(
+            "
+running 1 test
+test read ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out
+
+",
+        )
+        .stderr(is_match(
+            "^\
+.*Compiling foo v1.0.0 .*
+.*Finished .*
+.*Running .*
+.*Running `.*`
+$",
+        )?)
+        .success();
+    Ok(())
+}
+
+#[test]
 fn run_nothing() -> Result<()> {
     support::project()
         .file("src/lib.rs", "")

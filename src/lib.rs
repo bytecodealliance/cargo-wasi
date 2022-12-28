@@ -115,7 +115,7 @@ fn rmain(config: &mut Config) -> Result<()> {
         .map(|runner_override| (runner_override, false))
         .unwrap_or_else(|_| ("wasmtime".to_string(), true));
 
-    // Treat the wasi_runner variable as an exectable, followed by a whitespace-
+    // Treat the wasi_runner variable as an executable, followed by a whitespace-
     // separated list of arguments to the executable. This allows the user to
     // provide arguments which are passed to wasmtime without having to add more
     // command-line argument parsing to this crate.
@@ -124,10 +124,15 @@ fn rmain(config: &mut Config) -> Result<()> {
         let runner = words
             .next()
             .ok_or_else(|| anyhow!("$CARGO_TARGET_WASM32_WASI_RUNNER must not be empty"))?;
-        let extra_args = words.collect::<Vec<_>>();
+        let mut extra_args = words.collect::<Vec<_>>();
+
+        // Tests should be run with the current working directory preopened.
+        if let Subcommand::Test = subcommand {
+            extra_args.push("--dir=.");
+        }
+
         (runner, extra_args)
     };
-
     match subcommand {
         Subcommand::Run | Subcommand::Bench | Subcommand::Test => {
             if !using_default {
