@@ -20,11 +20,7 @@ path = "src/main.rs"
 name = "cargo_wasi"
 
 [workspace]
-members = [
-  'crates/assemble',
-  'crates/cargo-wasi-shim',
-  'examples/hello-world',
-]
+members = ['crates/assemble', 'crates/cargo-wasi-shim', 'examples/hello-world']
 exclude = ['tmp', 'target']
 
 [dependencies]
@@ -33,7 +29,11 @@ atty = "0.2"
 dirs = "3.0.1"
 flate2 = "1"
 fs2 = "0.4"
-reqwest = { version = "0.11", features = ["blocking", "json"] }
+reqwest = { version = "0.11", features = [
+  "blocking",
+  "json",
+  "rustls-tls",
+], default-features = false }
 rustc-demangle = "0.1.16"
 same-file = "1.0"
 semver = "0.11"
