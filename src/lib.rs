@@ -621,6 +621,8 @@ fn run_wasm_opt(
     cmd.arg(&input);
     cmd.arg(format!("-O{}", profile.opt_level));
     cmd.arg("-o").arg(wasm);
+    // Rust 1.67+ emits bulk memory instructions
+    cmd.arg("--enable-bulk-memory");
 
     if build.enable_name_section(profile) {
         cmd.arg("--debuginfo");
