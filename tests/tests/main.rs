@@ -331,7 +331,7 @@ fn wasm_bindgen() -> Result<()> {
 error: failed to process wasm at `.*foo.rustc.wasm`
 
 Caused by:
-    failed to create process \"my-wasm-bindgen.* \"--keep-debug\".*
+    failed to create process WASM_INTERFACE_TYPES=\"1\" \"my-wasm-bindgen.* \"--keep-debug\".*
 
 Caused by:
     .*
@@ -349,7 +349,7 @@ $",
 error: failed to process wasm at `.*foo.rustc.wasm`
 
 Caused by:
-    failed to create process \"my-wasm-bindgen.*
+    failed to create process WASM_INTERFACE_TYPES=\"1\" \"my-wasm-bindgen.*
 
 Caused by:
     .*
@@ -369,7 +369,7 @@ $",
 error: failed to process wasm at `.*foo.rustc.wasm`
 
 Caused by:
-    failed to create process \"my-wasm-bindgen.*
+    failed to create process WASM_INTERFACE_TYPES=\"1\" \"my-wasm-bindgen.*
 
 Caused by:
     .*
