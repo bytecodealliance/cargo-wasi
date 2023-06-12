@@ -1,0 +1,297 @@
+<!DOCTYPE HTML>
+<html lang="en" class="sidebar-visible no-js">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>CLI Usage - The cargo-wasi Subcommand</title>
+        
+
+        <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff" />
+
+        <link rel="shortcut icon" href="favicon.png">
+        <link rel="stylesheet" href="css/variables.css">
+        <link rel="stylesheet" href="css/general.css">
+        <link rel="stylesheet" href="css/chrome.css">
+        <link rel="stylesheet" href="css/print.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
+        <link href="https://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800" rel="stylesheet" type="text/css">
+        <link href="https://fonts.googleapis.com/css?family=Source+Code+Pro:500" rel="stylesheet" type="text/css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" href="highlight.css">
+        <link rel="stylesheet" href="tomorrow-night.css">
+        <link rel="stylesheet" href="ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+        
+
+        
+    </head>
+    <body class="light">
+        <!-- Provide site root to javascript -->
+        <script type="text/javascript">
+            var path_to_root = "";
+            var default_theme = "light";
+        </script>
+
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script type="text/javascript">
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script type="text/javascript">
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            document.body.className = theme;
+            document.querySelector('html').className = theme + ' js';
+        </script>
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script type="text/javascript">
+            var html = document.querySelector('html');
+            var sidebar = 'hidden';
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            }
+            html.classList.remove('sidebar-visible');
+            html.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <div class="sidebar-scrollbox">
+                <ol class="chapter"><li><a href="index.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li><ol class="section"><li><a href="install.html"><strong aria-hidden="true">1.1.</strong> Installation</a></li><li><a href="hello-world.html"><strong aria-hidden="true">1.2.</strong> Hello, World!</a></li></ol></li><li><a href="steps.html"><strong aria-hidden="true">2.</strong> Steps run by cargo-wasi</a></li><li><a href="reference.html"><strong aria-hidden="true">3.</strong> Reference</a></li><li><ol class="section"><li><a href="cli-usage.html" class="active"><strong aria-hidden="true">3.1.</strong> CLI Usage</a></li><li><a href="config.html"><strong aria-hidden="true">3.2.</strong> Configuration</a></li><li><a href="wasm-opt.html"><strong aria-hidden="true">3.3.</strong> Running wasm-opt</a></li><li><a href="wasm-bindgen.html"><strong aria-hidden="true">3.4.</strong> Running wasm-bindgen</a></li><li><a href="testing.html"><strong aria-hidden="true">3.5.</strong> Testing in WASI</a></li><li><a href="updating.html"><strong aria-hidden="true">3.6.</strong> Updating cargo wasi</a></li><li><a href="uninstalling.html"><strong aria-hidden="true">3.7.</strong> Uninstalling cargo wasi</a></li></ol></li><li><a href="contributing.html"><strong aria-hidden="true">4.</strong> Contributing</a></li></ol>
+            </div>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
+        </nav>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                
+                <div id="menu-bar" class="menu-bar">
+                    <div id="menu-bar-sticky-container">
+                        <div class="left-buttons">
+                            <button id="sidebar-toggle" class="icon-button" type="button" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                                <i class="fa fa-bars"></i>
+                            </button>
+                            <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                                <i class="fa fa-paint-brush"></i>
+                            </button>
+                            <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                                <li role="none"><button role="menuitem" class="theme" id="light">Light (default)</button></li>
+                                <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                                <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                                <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                                <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                            </ul>
+                            
+                            <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                                <i class="fa fa-search"></i>
+                            </button>
+                            
+                        </div>
+
+                        <h1 class="menu-title">The cargo-wasi Subcommand</h1>
+
+                        <div class="right-buttons">
+                            <a href="print.html" title="Print this book" aria-label="Print this book">
+                                <i id="print-button" class="fa fa-print"></i>
+                            </a>
+                            
+                        </div>
+                    </div>
+                </div>
+
+                
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" name="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+                
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script type="text/javascript">
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h1><a class="header" href="#cli-usage" id="cli-usage">CLI Usage</a></h1>
+<p>In general <code>cargo wasi</code> takes no CLI flags specifically, since it will forward
+<em>everything</em> to <code>cargo</code> under the hood. The subcommand, however, will attempt
+to infer flags such as <code>-v</code> from the Cargo arguments pass, switching itself to
+a verbose output if it looks like Cargo is using a verbose output.</p>
+<p>The supported subcommands for <code>cargo wasi</code> are:</p>
+<h2><a class="header" href="#cargo-wasi-build" id="cargo-wasi-build"><code>cargo wasi build</code></a></h2>
+<p>This is the primary subcommand used to build WebAssembly code. This will build
+your crate for the <code>wasm32-wasi</code> target and run any postprocessing (like
+<code>wasm-bindgen</code> or <code>wasm-opt</code>) over any produced binary.</p>
+<pre><code>$ cargo wasi build
+$ cargo wasi build --release
+$ cargo wasi build --lib
+$ cargo wasi build --test foo
+</code></pre>
+<p>Output <code>*.wasm</code> files will be located in <code>target/wasm32-wasi/debug</code> for debug
+builds or <code>target/wasm32-wasi/release</code> for release builds.</p>
+<h2><a class="header" href="#cargo-wasi-check" id="cargo-wasi-check"><code>cargo wasi check</code></a></h2>
+<p>This subcommands forwards everything to <code>cargo check</code>, allowing to perform
+quick compile-time checks over your code without actually producing any
+<code>*.wasm</code> binaries or running any wasm code.</p>
+<pre><code>$ cargo wasi check
+$ cargo wasi check --lib
+$ cargo wasi check --tests
+</code></pre>
+<h2><a class="header" href="#cargo-wasi-run" id="cargo-wasi-run"><code>cargo wasi run</code></a></h2>
+<p>Forwards everything to <code>cargo run</code>, and runs all binaries in <code>wasmtime</code>.
+Arguments passed will be forwarded to <code>wasmtime</code>. Note that it's not
+necessary to run <code>cargo wasi build</code> before this subcommand. Example usage looks
+like:</p>
+<pre><code>$ cargo wasi run
+$ cargo wasi run --release
+$ cargo wasi run arg1 arg2
+$ cargo wasi run -- --flag-for-wasm-binary
+$ cargo wasi run --bin foo
+</code></pre>
+<blockquote>
+<p><strong>Note</strong>: Using <code>cargo wasi</code> will print <code>Running ...</code> twice, that's normal
+but only one wasm binary is actually run.</p>
+</blockquote>
+<h2><a class="header" href="#cargo-wasi-test" id="cargo-wasi-test"><code>cargo wasi test</code></a></h2>
+<p>Forwards everything to <code>cargo test</code>, and runs all tests in <code>wasmtime</code>.
+Arguments passed will be forwarded to <code>cargo test</code>. Note that it's not
+necessary to run <code>cargo wasi build</code> before executing this command. Example
+usage looks like:</p>
+<pre><code>$ cargo wasi test
+$ cargo wasi test my_test_to_run
+$ cargo wasi test --lib
+$ cargo wasi test --test foo
+$ cargo wasi test -- --nocpature
+</code></pre>
+<p>You can find some more info about writing tests in the <a href="https://doc.rust-lang.org/book/ch11-01-writing-tests.html">Rust book's chapter on
+writing tests</a>.</p>
+<blockquote>
+<p><strong>Note</strong>: You'll also want to be sure to consult <a href="testing.html">WASI-specific caveats when
+testing</a> since there are some gotchas today.</p>
+</blockquote>
+<h2><a class="header" href="#cargo-wasi-bench" id="cargo-wasi-bench"><code>cargo wasi bench</code></a></h2>
+<p>Forwards everything to <code>cargo bench</code>, and like previous commands also executes
+the benchmarks inside of <code>wasmtime</code>. Arguments passed will be forwarded to
+<code>cargo bench</code>, such as:</p>
+<pre><code>$ cargo wasi bench
+$ cargo wasi bench my_benchmark_to_run
+$ cargo wasi bench --bench foo
+$ cargo wasi bench -- --nocpature
+</code></pre>
+<h2><a class="header" href="#cargo-wasi-fix" id="cargo-wasi-fix"><code>cargo wasi fix</code></a></h2>
+<p>Forwards everything to <code>cargo fix</code>, but again with the <code>--target wasm32-wasi</code>
+option which ensures that the fixes are also applied to wasi-specific code (if
+any).</p>
+<h2><a class="header" href="#cargo-wasi-version" id="cargo-wasi-version"><code>cargo wasi version</code></a></h2>
+<p>This subcommand will print out version information about <code>cargo wasi</code> itself.
+This is also known as <code>cargo wasi -V</code> and <code>cargo wasi --version</code>.</p>
+<pre><code>$ cargo wasi version
+$ cargo wasi -V
+$ cargo wasi --version
+</code></pre>
+<h2><a class="header" href="#cargo-wasi-self-clean" id="cargo-wasi-self-clean"><code>cargo wasi self clean</code></a></h2>
+<p>This is an internal management subcommand for <code>cargo wasi</code> which completely
+clears out the cache that <code>cargo wasi</code> uses for itself. This cache includes
+various metadata files and downloaded versions of tools like <code>wasm-opt</code> and
+<code>wasm-bindgen</code>.</p>
+<pre><code>$ cargo wasi self clean
+</code></pre>
+<h2><a class="header" href="#cargo-wasi-self-update-check" id="cargo-wasi-self-update-check"><code>cargo wasi self update-check</code></a></h2>
+<p>Checks to see if an update is ready for <code>cargo-wasi</code>. If it is then instructions
+to acquire the new update will be printed out.</p>
+<pre><code>$ cargo wasi self update-check
+</code></pre>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                        
+                            <a rel="prev" href="reference.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+                        
+
+                        
+                            <a rel="next" href="config.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
+                        
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                
+                    <a href="reference.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+                
+
+                
+                    <a href="config.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
+                
+            </nav>
+
+        </div>
+
+        
+
+        
+
+        
+
+        
+        <script src="elasticlunr.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="mark.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="searcher.js" type="text/javascript" charset="utf-8"></script>
+        
+
+        <script src="clipboard.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="highlight.js" type="text/javascript" charset="utf-8"></script>
+        <script src="book.js" type="text/javascript" charset="utf-8"></script>
+
+        <!-- Custom JS scripts -->
+        
+
+        
+
+    </body>
+</html>

@@ -1,0 +1,5 @@
+[book]
+authors = ["The cargo-wasi Authors"]
+multilingual = false
+src = "."
+title = "The cargo-wasi Subcommand"

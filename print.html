@@ -1,0 +1,693 @@
+<!DOCTYPE HTML>
+<html lang="en" class="sidebar-visible no-js">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>The cargo-wasi Subcommand</title>
+        
+        <meta name="robots" content="noindex" />
+        
+
+        <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff" />
+
+        <link rel="shortcut icon" href="favicon.png">
+        <link rel="stylesheet" href="css/variables.css">
+        <link rel="stylesheet" href="css/general.css">
+        <link rel="stylesheet" href="css/chrome.css">
+        <link rel="stylesheet" href="css/print.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
+        <link href="https://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800" rel="stylesheet" type="text/css">
+        <link href="https://fonts.googleapis.com/css?family=Source+Code+Pro:500" rel="stylesheet" type="text/css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" href="highlight.css">
+        <link rel="stylesheet" href="tomorrow-night.css">
+        <link rel="stylesheet" href="ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+        
+
+        
+    </head>
+    <body class="light">
+        <!-- Provide site root to javascript -->
+        <script type="text/javascript">
+            var path_to_root = "";
+            var default_theme = "light";
+        </script>
+
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script type="text/javascript">
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script type="text/javascript">
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            document.body.className = theme;
+            document.querySelector('html').className = theme + ' js';
+        </script>
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script type="text/javascript">
+            var html = document.querySelector('html');
+            var sidebar = 'hidden';
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            }
+            html.classList.remove('sidebar-visible');
+            html.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <div class="sidebar-scrollbox">
+                <ol class="chapter"><li><a href="index.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li><ol class="section"><li><a href="install.html"><strong aria-hidden="true">1.1.</strong> Installation</a></li><li><a href="hello-world.html"><strong aria-hidden="true">1.2.</strong> Hello, World!</a></li></ol></li><li><a href="steps.html"><strong aria-hidden="true">2.</strong> Steps run by cargo-wasi</a></li><li><a href="reference.html"><strong aria-hidden="true">3.</strong> Reference</a></li><li><ol class="section"><li><a href="cli-usage.html"><strong aria-hidden="true">3.1.</strong> CLI Usage</a></li><li><a href="config.html"><strong aria-hidden="true">3.2.</strong> Configuration</a></li><li><a href="wasm-opt.html"><strong aria-hidden="true">3.3.</strong> Running wasm-opt</a></li><li><a href="wasm-bindgen.html"><strong aria-hidden="true">3.4.</strong> Running wasm-bindgen</a></li><li><a href="testing.html"><strong aria-hidden="true">3.5.</strong> Testing in WASI</a></li><li><a href="updating.html"><strong aria-hidden="true">3.6.</strong> Updating cargo wasi</a></li><li><a href="uninstalling.html"><strong aria-hidden="true">3.7.</strong> Uninstalling cargo wasi</a></li></ol></li><li><a href="contributing.html"><strong aria-hidden="true">4.</strong> Contributing</a></li></ol>
+            </div>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
+        </nav>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                
+                <div id="menu-bar" class="menu-bar">
+                    <div id="menu-bar-sticky-container">
+                        <div class="left-buttons">
+                            <button id="sidebar-toggle" class="icon-button" type="button" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                                <i class="fa fa-bars"></i>
+                            </button>
+                            <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                                <i class="fa fa-paint-brush"></i>
+                            </button>
+                            <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                                <li role="none"><button role="menuitem" class="theme" id="light">Light (default)</button></li>
+                                <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                                <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                                <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                                <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                            </ul>
+                            
+                            <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                                <i class="fa fa-search"></i>
+                            </button>
+                            
+                        </div>
+
+                        <h1 class="menu-title">The cargo-wasi Subcommand</h1>
+
+                        <div class="right-buttons">
+                            <a href="print.html" title="Print this book" aria-label="Print this book">
+                                <i id="print-button" class="fa fa-print"></i>
+                            </a>
+                            
+                        </div>
+                    </div>
+                </div>
+
+                
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" name="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+                
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script type="text/javascript">
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h1><a class="header" href="#introduction" id="introduction">Introduction</a></h1>
+<p>The <code>cargo-wasi</code> project is a subcommand for
+<a href="https://doc.rust-lang.org/cargo/">Cargo</a> which provides a convenient set of
+defaults for building and running <a href="https://doc.rust-lang.org/cargo/">Rust</a> code
+on the <a href="https://wasi.dev/"><code>wasm32-wasi</code> target</a>. The <code>cargo wasi</code> command
+makes compiling Rust code to WASI buttery-smooth with built-in defaults to avoid
+needing to manage a myriad of tools as part of building a wasm executable.</p>
+<p><a href="https://github.com/webassembly/wasi">WASI is a developing standard</a> and we hope
+to make it very easy to develop Rust code for WASI to both influence the
+standard as well as ensure that Rust code follows WASI best practices. Keep
+reading for more information about how this all works!</p>
+<h1><a class="header" href="#installation" id="installation">Installation</a></h1>
+<p>To install <code>cargo-wasi</code> you'll first want to <a href="https://www.rust-lang.org/tools/install">install Rust
+itself</a>, which you'll need anyway for
+building Rust code! Once you've got Rust installed you can install <code>cargo-wasi</code>
+with:</p>
+<pre><code>$ cargo install cargo-wasi
+</code></pre>
+<p>This will install a precompiled binary for most major platforms or install from
+source if we don't have a precompiled binary for your platform. If you would
+like to see a precompiled binary for your platform <a href="https://github.com/bytecodealliance/cargo-wasi/issues/new">please file an
+issue</a>!.</p>
+<p>To verify that your installation works, you can execute:</p>
+<pre><code>$ cargo wasi --version
+</code></pre>
+<p>and that should print both the version number as well as git information about
+where the binary was built from.</p>
+<p>Now that everything is set, let's build some code for wasi!</p>
+<h2><a class="header" href="#building-from-source" id="building-from-source">Building from Source</a></h2>
+<p>Installing from crates.io via <code>cargo install cargo-wasi</code> will install
+precompiled binaries. These binaries are built on the <code>cargo-wasi</code> repository's
+CI and are uploaded to crates.io as part of the publication process. If you'd
+prefer to install from source, you can execute this command instead:</p>
+<pre><code>$ cargo install cargo-wasi-src
+</code></pre>
+<h1><a class="header" href="#hello-world" id="hello-world">Hello, World!</a></h1>
+<p>Let's see an example of how to run the WASI version of &quot;Hello, World!&quot;. This'll
+end up looking very familiar to the Rust version of &quot;Hello, World!&quot; as well.
+First up let's create a new project with Cargo:</p>
+<pre><code>$ cargo new wasi-hello-world
+     Created binary (application) `wasi-hello-world` package
+$ cd wasi-hello-world
+</code></pre>
+<p>This creates a <code>wasi-hello-world</code> folder which has a default <code>Cargo.toml</code> and
+<code>src/main.rs</code>. The <code>main.rs</code> is the entry point for our program and currently
+contains <code>println!(&quot;Hello, world!&quot;);</code>. Everything should be set up for us to
+execute (no code needed!) so let's run the code inside of the <code>wasi-hello-world</code>
+directory:</p>
+<pre><code>$ cargo wasi run
+error: failed to find `wasmtime` in $PATH, you'll want to install `wasmtime` before running this command
+...
+</code></pre>
+<p>Oh dear, that failed very quickly! For this command though we need to have a
+way to actually execute the WebAssembly binary that Rust will produce. The
+<code>cargo wasi</code> subcommand by default supports <a href="https://wasmtime.dev">wasmtime</a>,
+and the error message should have instructions of how to install <code>wasmtime</code>.
+You can also view installation instructions on the <a href="https://wasmtime.dev">wasmtime
+website</a>.</p>
+<p>Once we've got <code>wasmtime</code> installed, make sure it's working via:</p>
+<pre><code>$ wasmtime --version
+</code></pre>
+<p>Note that you may have to open a new shell for this to ensure <code>PATH</code> changes
+take effect.</p>
+<p>Ok, now that we've got a runtime installed, let's retry executing our binary:</p>
+<pre><code>$ cargo wasi run
+info: downloading component 'rust-std' for 'wasm32-wasi'
+info: installing component 'rust-std' for 'wasm32-wasi'
+   Compiling wasi-hello-world v0.1.0 (/code/wasi-hello-world)
+    Finished dev [unoptimized + debuginfo] target(s) in 0.15s
+     Running `/.cargo/bin/cargo-wasi target/wasm32-wasi/debug/wasi-hello-world.wasm`
+     Running `target/wasm32-wasi/debug/wasi-hello-world.wasm`
+Hello, world!
+</code></pre>
+<p>Success! The command first used
+<a href="https://github.com/rust-lang/rustup.rs"><code>rustup</code></a> to install the Rust
+<code>wasm32-wasi</code> target automatically, and then we executed <code>cargo</code> to build the
+WebAssembly binary. Finally <code>wasmtime</code> was used and we can see that <code>Hello, world!</code> was printed by our program.</p>
+<p>After this we're off to the races in developing our crate. Be sure to check out
+the rest of this book for more information about what you can do with <code>cargo wasi</code>. Additionally if this is your first time using Cargo, be sure to check
+out <a href="https://doc.rust-lang.org/book/ch01-03-hello-cargo.html">Cargo's introductory
+documentation</a> as well</p>
+<h1><a class="header" href="#steps-run-by-cargo-wasi" id="steps-run-by-cargo-wasi">Steps run by <code>cargo wasi</code></a></h1>
+<p>The <code>cargo wasi</code> subcommand is intended to be a <em>convenience</em> when developing
+Rust code for WASI, but is not required. It is a thin wrapper around the general
+&quot;toolchain&quot; of building WebAssembly code. Building WebAssembly code can be
+relatively involved and have a nontrivial number of moving parts, so having a
+convenience like <code>cargo wasi</code> becomes quite nice quite quickly, but it's
+important to also understand what <code>cargo wasi</code> is doing under the hood!</p>
+<p>This section will explain the various steps that <code>cargo wasi</code> internally takes
+care of for you. Be sure to check out the <a href="reference.html">reference
+documentation</a> for an exhaustive list of ways to run and configure
+<code>cargo wasi</code>.</p>
+<h2><a class="header" href="#managing-the-wasm32-wasi-target" id="managing-the-wasm32-wasi-target">Managing the <code>wasm32-wasi</code> target</a></h2>
+<p>The Rust installer does not install the <code>wasm32-wasi</code> Rust standard library by
+default, but to compile any code for <code>wasm32-wasi</code> you'll need to be sure to
+have this target installed for your Rust toolchain. The <code>cargo wasi</code> subcommand
+will automatically execute, if necessary:</p>
+<pre><code>rustup target add wasm32-wasi
+</code></pre>
+<p>For systems not using <code>rustup</code> it will generate an error indicating whether or
+not the <code>wasm32-wasi</code> target is installed.</p>
+<h2><a class="header" href="#ensuring-a-wasmtime-runtime-is-installed" id="ensuring-a-wasmtime-runtime-is-installed">Ensuring a <code>wasmtime</code> runtime is installed</a></h2>
+<p>As we saw previously when <a href="hello-world.html">running &quot;Hello, world!&quot;</a> a
+<code>wasmtime</code> executable is required to execute WASI code locally. The <code>cargo wasi</code>
+subcommand will verify that it is installed and provide an understandable error
+message if it isn't, also recommending how to <a href="https://wasmtime.dev">install
+<code>wasmtime</code></a>.</p>
+<h2><a class="header" href="#automatically-configure-cargo-for-wasm32-wasi" id="automatically-configure-cargo-for-wasm32-wasi">Automatically configure Cargo for <code>wasm32-wasi</code></a></h2>
+<p>Whenever <code>cargo wasi</code> is used it will automatically pass <code>--target wasm32-wasi</code>
+to all Cargo subcommands that are invoked. This avoids you having to type
+this all out on each command.</p>
+<h2><a class="header" href="#further-optimizing-webassembly-with-wasm-opt" id="further-optimizing-webassembly-with-wasm-opt">Further optimizing WebAssembly with <code>wasm-opt</code></a></h2>
+<p>The Rust compiler usese LLVM's WebAssembly backend to produce WebAssembly code.
+LLVM itself is an extremely good optimizing compiler, but LLVM's WebAssembly
+backend is unfortunately not quite as optimized as its other backends (such as
+X86). Standard practice today is to execute the <code>wasm-opt</code> tool (part of the
+<a href="https://github.com/webassembly/binaryen">binaryen project</a>) to further
+optimize a WebAssembly binary.</p>
+<p>For LLVM-optimized WebAssembly binaries <code>wasm-opt</code> normally doesn't get much of
+a runtime speed increase, but it can often reduce the size of a WebAssembly
+binary by 10-20%, which can be some serious savings!</p>
+<p>For more information about how <code>wasm-opt</code> is run see the <a href="wasm-opt.html">reference
+documentation</a></p>
+<h2><a class="header" href="#executing-wasm-bindgen-for-webassembly-interface-types" id="executing-wasm-bindgen-for-webassembly-interface-types">Executing <code>wasm-bindgen</code> for WebAssembly Interface Types</a></h2>
+<p>The <a href="https://github.com/webassembly/interface-types">WebAssembly Interface Types
+proposal</a> is a developing
+standard for enhancing the set of types that a WebAssembly module can work with
+at its boundaries (as opposed to just integers and floats). This developing
+standard is targeted at use cases primarily outside of a browser (but also in
+one!) which is a perfect fit for WASI.</p>
+<p>Rust's support for WebAssembly Interface Types comes through the
+<a href="https://github.com/rustwasm/wasm-bindgen"><code>wasm-bindgen</code> project</a>. When
+using <code>wasm-bindgen</code> as a crate, though, it requires also executing the
+matching CLI <code>wasm-bindgen</code> tool on the final WebAssembly binary. The
+<code>cargo wasi</code> subcommand will automatically find and install the matching binary
+to run on your WASI WebAssembly file. Using <code>cargo wasi</code> will also
+automatically configure <code>wasm-bindgen</code> to enable interface types support.</p>
+<h2><a class="header" href="#deleting-dwarf-debuginfo-in-release-mode" id="deleting-dwarf-debuginfo-in-release-mode">Deleting DWARF debuginfo in release mode</a></h2>
+<p>The standard Rust toolchain, following the convention of all platforms, ships
+an optimized standard library for the <code>wasm32-wasi</code> target that contains DWARF
+debug information. This is typically what you want in debug builds to have
+a better debugging experience for the standard library, but release builds of
+WebAssembly are often focused on size and disable debug information by default.
+Following standard practice for all targets the Rust toolchain will by default
+include the standard library's DWARF debug information in the final <code>*.wasm</code>
+file, but <code>cargo wasi</code> will strip it out.</p>
+<p>Note that this strip only happens if your build disables debuginfo in a release
+executable. If you enable debuginfo in the release executable, then <code>cargo wasi</code>
+will not strip out the dwarf debug information.</p>
+<h2><a class="header" href="#demangling-rust-symbols-in-the-name-section" id="demangling-rust-symbols-in-the-name-section">Demangling Rust symbols in the <code>name</code> section</a></h2>
+<p>WebAssembly's <a href="http://webassembly.github.io/spec/core/appendix/custom.html#name-section"><code>name</code> custom
+section</a>
+is present in debug and release builds of WebAssembly binaries, but Rust
+symbols, like all other platforms, are mangled! This means that instead of
+<code>main</code> you'll see <code>_ZN4main20h...</code>, very long symbol names.</p>
+<p>The <code>cargo wasi</code> toolchain will ensure that all Rust symbol names in the <code>name</code>
+section are demangled into a more human-readable form, improving the debugging
+experience when using native tooling.</p>
+<h2><a class="header" href="#configuration-for-the-name-and-producers-custom-sections" id="configuration-for-the-name-and-producers-custom-sections">Configuration for the <code>name</code> and <code>producers</code> Custom Sections</a></h2>
+<p>WebAssembly has a <a href="http://webassembly.github.io/spec/core/appendix/custom.html#name-section"><code>name</code> custom
+section</a>
+for providing debug names to functions/locals/etc which assist in debugging
+WebAssembly modules. Additionally a <a href="https://github.com/WebAssembly/tool-conventions/blob/master/ProducersSection.md"><code>producers</code> custom
+section</a>
+is typically used to collect metadata about tools used to produce a WebAssembly
+binary.</p>
+<p>These two sections are emitted by default into all <code>*.wasm</code> binaries (including
+release builds). Using <code>cargo wasi</code>, though, you can ensure they're
+deleted from release builds in your <code>Cargo.toml</code>:</p>
+<pre><code class="language-toml">[package.metadata]
+wasm-name-section = false
+wasm-producers-section = false
+</code></pre>
+<p>More information about configuration can be found <a href="config.html">in the reference</a></p>
+<h1><a class="header" href="#reference" id="reference">Reference</a></h1>
+<p>This section of documentation is a reference-style documentation about <code>cargo wasi</code>. It's intended to be an exhaustive document of features provided by
+<code>cargo wasi</code>, so if you don't see something documented here <a href="https://github.com/bytecodealliance/cargo-wasi/issues/new">please file an
+issue</a>!</p>
+<h1><a class="header" href="#cli-usage" id="cli-usage">CLI Usage</a></h1>
+<p>In general <code>cargo wasi</code> takes no CLI flags specifically, since it will forward
+<em>everything</em> to <code>cargo</code> under the hood. The subcommand, however, will attempt
+to infer flags such as <code>-v</code> from the Cargo arguments pass, switching itself to
+a verbose output if it looks like Cargo is using a verbose output.</p>
+<p>The supported subcommands for <code>cargo wasi</code> are:</p>
+<h2><a class="header" href="#cargo-wasi-build" id="cargo-wasi-build"><code>cargo wasi build</code></a></h2>
+<p>This is the primary subcommand used to build WebAssembly code. This will build
+your crate for the <code>wasm32-wasi</code> target and run any postprocessing (like
+<code>wasm-bindgen</code> or <code>wasm-opt</code>) over any produced binary.</p>
+<pre><code>$ cargo wasi build
+$ cargo wasi build --release
+$ cargo wasi build --lib
+$ cargo wasi build --test foo
+</code></pre>
+<p>Output <code>*.wasm</code> files will be located in <code>target/wasm32-wasi/debug</code> for debug
+builds or <code>target/wasm32-wasi/release</code> for release builds.</p>
+<h2><a class="header" href="#cargo-wasi-check" id="cargo-wasi-check"><code>cargo wasi check</code></a></h2>
+<p>This subcommands forwards everything to <code>cargo check</code>, allowing to perform
+quick compile-time checks over your code without actually producing any
+<code>*.wasm</code> binaries or running any wasm code.</p>
+<pre><code>$ cargo wasi check
+$ cargo wasi check --lib
+$ cargo wasi check --tests
+</code></pre>
+<h2><a class="header" href="#cargo-wasi-run" id="cargo-wasi-run"><code>cargo wasi run</code></a></h2>
+<p>Forwards everything to <code>cargo run</code>, and runs all binaries in <code>wasmtime</code>.
+Arguments passed will be forwarded to <code>wasmtime</code>. Note that it's not
+necessary to run <code>cargo wasi build</code> before this subcommand. Example usage looks
+like:</p>
+<pre><code>$ cargo wasi run
+$ cargo wasi run --release
+$ cargo wasi run arg1 arg2
+$ cargo wasi run -- --flag-for-wasm-binary
+$ cargo wasi run --bin foo
+</code></pre>
+<blockquote>
+<p><strong>Note</strong>: Using <code>cargo wasi</code> will print <code>Running ...</code> twice, that's normal
+but only one wasm binary is actually run.</p>
+</blockquote>
+<h2><a class="header" href="#cargo-wasi-test" id="cargo-wasi-test"><code>cargo wasi test</code></a></h2>
+<p>Forwards everything to <code>cargo test</code>, and runs all tests in <code>wasmtime</code>.
+Arguments passed will be forwarded to <code>cargo test</code>. Note that it's not
+necessary to run <code>cargo wasi build</code> before executing this command. Example
+usage looks like:</p>
+<pre><code>$ cargo wasi test
+$ cargo wasi test my_test_to_run
+$ cargo wasi test --lib
+$ cargo wasi test --test foo
+$ cargo wasi test -- --nocpature
+</code></pre>
+<p>You can find some more info about writing tests in the <a href="https://doc.rust-lang.org/book/ch11-01-writing-tests.html">Rust book's chapter on
+writing tests</a>.</p>
+<blockquote>
+<p><strong>Note</strong>: You'll also want to be sure to consult <a href="testing.html">WASI-specific caveats when
+testing</a> since there are some gotchas today.</p>
+</blockquote>
+<h2><a class="header" href="#cargo-wasi-bench" id="cargo-wasi-bench"><code>cargo wasi bench</code></a></h2>
+<p>Forwards everything to <code>cargo bench</code>, and like previous commands also executes
+the benchmarks inside of <code>wasmtime</code>. Arguments passed will be forwarded to
+<code>cargo bench</code>, such as:</p>
+<pre><code>$ cargo wasi bench
+$ cargo wasi bench my_benchmark_to_run
+$ cargo wasi bench --bench foo
+$ cargo wasi bench -- --nocpature
+</code></pre>
+<h2><a class="header" href="#cargo-wasi-fix" id="cargo-wasi-fix"><code>cargo wasi fix</code></a></h2>
+<p>Forwards everything to <code>cargo fix</code>, but again with the <code>--target wasm32-wasi</code>
+option which ensures that the fixes are also applied to wasi-specific code (if
+any).</p>
+<h2><a class="header" href="#cargo-wasi-version" id="cargo-wasi-version"><code>cargo wasi version</code></a></h2>
+<p>This subcommand will print out version information about <code>cargo wasi</code> itself.
+This is also known as <code>cargo wasi -V</code> and <code>cargo wasi --version</code>.</p>
+<pre><code>$ cargo wasi version
+$ cargo wasi -V
+$ cargo wasi --version
+</code></pre>
+<h2><a class="header" href="#cargo-wasi-self-clean" id="cargo-wasi-self-clean"><code>cargo wasi self clean</code></a></h2>
+<p>This is an internal management subcommand for <code>cargo wasi</code> which completely
+clears out the cache that <code>cargo wasi</code> uses for itself. This cache includes
+various metadata files and downloaded versions of tools like <code>wasm-opt</code> and
+<code>wasm-bindgen</code>.</p>
+<pre><code>$ cargo wasi self clean
+</code></pre>
+<h2><a class="header" href="#cargo-wasi-self-update-check" id="cargo-wasi-self-update-check"><code>cargo wasi self update-check</code></a></h2>
+<p>Checks to see if an update is ready for <code>cargo-wasi</code>. If it is then instructions
+to acquire the new update will be printed out.</p>
+<pre><code>$ cargo wasi self update-check
+</code></pre>
+<h1><a class="header" href="#configuration" id="configuration">Configuration</a></h1>
+<p>The <code>cargo wasi</code> subcomand <a href="cli-usage.html">does not have any CLI flags of its
+own</a> but it's still not a one-size-fits-all command, so
+configuration needs to go somewhere! The <code>cargo wasi</code> command supports
+<a href="https://github.com/toml-lang/toml">TOML</a>-based configuration stored in your
+<a href="https://doc.rust-lang.org/book/ch14-03-cargo-workspaces.html">workspace</a>
+<code>Cargo.toml</code> in the <code>[package.metadata]</code> section:</p>
+<pre><code class="language-toml">[package.metadata]
+# ...
+</code></pre>
+<p>The keys supported by <code>cargo wasi</code> are:</p>
+<pre><code class="language-toml">[package.metadata]
+wasm-opt = true
+wasm-name-section = true
+wasm-producers-section = true
+</code></pre>
+<p>For more documentation about each key, see its section below.</p>
+<h2><a class="header" href="#wasm-opt" id="wasm-opt"><code>wasm-opt</code></a></h2>
+<p>This configuration option is a boolean value (<code>true</code> or <code>false</code>) which
+indicates whether the <code>wasm-opt</code> optimization tool from the <a href="https://github.com/webassembly/binaryen">binaryen
+toolkit</a> might be executed to further
+optimize the produced WebAssembly binaries. The default for this option is
+<code>true</code>.</p>
+<p>If this option is set to <code>false</code>, then <code>wasm-opt</code> will never be executed.</p>
+<p>If this option is set to <code>true</code>, this does not mean <code>wasm-opt</code> will
+unconditionally run for all builds. A value of <code>true</code> means that <code>wasm-opt</code>
+<em>may</em> run, depending on the internal heuristics of <code>cargo wasi</code>. For more
+information about these heuristics and caveats, see <a href="wasm-opt.html">the documentation about
+running <code>wasm-opt</code></a>.</p>
+<h2><a class="header" href="#wasm-name-section" id="wasm-name-section"><code>wasm-name-section</code></a></h2>
+<p>The <a href="http://webassembly.github.io/spec/core/appendix/custom.html#name-section"><code>name</code> custom
+section</a>
+records debugging information as names for wasm functions and variables. If you
+want reasonable stack traces or debug information it's recommended to have the
+<code>name</code> section present. Builds optimized for size though that have other
+channels of debugging may wish to disable this.</p>
+<p>This configuration option is a boolean value (<code>true</code> or <code>false</code>) which
+indicates whether the <code>name</code> section should be present or not. This option
+defaults to <code>true</code>.</p>
+<p>If this option is set to <code>false</code> then it only takes effect when a build is
+produced without debuginfo. For example a <code>cargo wasi build</code> binary which has
+debuginfo would still have the <code>name</code> section present. A <code>cargo wasi build --release</code> binary, however, would not have debuginfo and would also have the
+<code>name</code> section removed.</p>
+<h2><a class="header" href="#wasm-producers-section" id="wasm-producers-section"><code>wasm-producers-section</code></a></h2>
+<p>The <a href="https://github.com/WebAssembly/tool-conventions/blob/master/ProducersSection.md"><code>producers</code> custom
+section</a>
+records tools used to produce a WebAssembly module. This is meant for metric
+collection in production systems, and is generally harmless to include. Builds
+micro-optimized for size, however, may wish to exclude it.</p>
+<p>This configuration option is a boolean value (<code>true</code> or <code>false</code>) which
+indicates whether the <code>producers</code> section should be present or not. This option
+defaults to <code>true</code>.</p>
+<p>If this option is set to <code>false</code> then it only takes effect when a build is
+produced without debuginfo. For example a <code>cargo wasi build</code> binary which has
+debuginfo would still have the <code>producers</code> section present. A <code>cargo wasi build --release</code> binary, however, would not have debuginfo and would also have the
+<code>producers</code> section removed.</p>
+<h1><a class="header" href="#running-wasm-opt" id="running-wasm-opt">Running <code>wasm-opt</code></a></h1>
+<p>By default <code>cargo wasi</code> will run <code>wasm-opt</code> over optimized WebAssembly
+binaries. The <code>wasm-opt</code> program is a tool in the <a href="https://github.com/webassembly/binaryen">binaryen
+toolkit</a> which is a wasm-to-wasm
+transformation that optimizes the input wasm module. Often <code>wasm-opt</code> can get
+10-20% size reductions over LLVM's raw output.</p>
+<p>There are a number of heuristics that are used to configure how <code>wasm-opt</code> is
+run though and it's important to keep those in mind!</p>
+<h2><a class="header" href="#which-wasm-opt-executed" id="which-wasm-opt-executed">Which <code>wasm-opt</code> executed?</a></h2>
+<p>Every release of <code>cargo wasi</code> is hardcoded to download a precompiled version of
+<code>wasm-opt</code>. This binary will be lazily downloaded and then executed. You can
+also request that a specific <code>wasm-opt</code> binary is used via the <code>WASM_OPT</code>
+environment variable.</p>
+<p>Note that we're interested in feedback on this strategy, so please don't
+hesitate to file an issue if this doesn't work for you!</p>
+<h2><a class="header" href="#disabled-with-dwarf-debuginfo" id="disabled-with-dwarf-debuginfo">Disabled with DWARF debuginfo</a></h2>
+<p>If DWARF debug information is requested for a build (default on for debug
+builds, default off for release builds) then <code>wasm-opt</code> will be disabled.
+At the time of this writing <code>wasm-opt</code> does not support preserving DWARF debug
+information through its transformations, so <code>wasm-opt</code> is skipped.</p>
+<p>In effect this means that <code>wasm-opt</code> will not run in debug mode, but it will
+run in release mode. If you enable debug info in release mode, though, then it
+will not run.</p>
+<p>You can configure debuginfo through your <code>Cargo.toml</code>:</p>
+<pre><code class="language-toml">[profile.release]
+debug = 1
+</code></pre>
+<h2><a class="header" href="#selected-optimization-level" id="selected-optimization-level">Selected Optimization Level</a></h2>
+<p>The <code>wasm-opt</code> tool, like most compilers, supports multiple levels of
+optimization. The optimization level is by default selected to match <code>rustc</code>'s
+own optimization level. If <code>rustc</code>'s optimization level is &quot;0&quot;, then <code>wasm-opt</code>
+will not be run.</p>
+<p>This effectively means that in debug mode this is another reason that
+<code>wasm-opt</code> is disabled (because debug mode uses optimization level 0). In
+release mode we will by default execute <code>wasm-opt -O3</code> because <code>rustc</code> is
+executed with <code>-C opt-level=3</code>.</p>
+<p>You can configure <code>rustc</code>'s and <code>wasm-opt</code>'s optimization level through your
+<code>Cargo.toml</code>.  For example to optimize for size instead of speed:</p>
+<pre><code class="language-toml">[profile.release]
+opt-level = 's'
+</code></pre>
+<h2><a class="header" href="#disabled-via-configuration" id="disabled-via-configuration">Disabled via configuration</a></h2>
+<p>You can also outright disable <code>wasm-opt</code> via <a href="config.html">configuration</a> by
+updating your <code>Cargo.toml</code>:</p>
+<pre><code class="language-toml">[package.metadata]
+wasm-opt = false
+</code></pre>
+<h2><a class="header" href="#disabled-when-wasm-bindgen-is-used" id="disabled-when-wasm-bindgen-is-used">Disabled when <code>wasm-bindgen</code> is used</a></h2>
+<p>Finally, as one last caveat, <code>wasm-opt</code> is automatically disabled if
+<code>wasm-bindgen</code> is used as part of the build. If <code>wasm-bindgen</code> is used it's
+assumed that WebAssembly Interface Types are also used, and currently
+<code>wasm-opt</code> (at the time of this writing) does not have support for WebAssembly
+Interface Types. If we were to run <code>wasm-opt</code> it would produce a broken binary!</p>
+<h1><a class="header" href="#running-wasm-bindgen" id="running-wasm-bindgen">Running <code>wasm-bindgen</code></a></h1>
+<blockquote>
+<p><strong>Note</strong>: Usage of <code>wasm-bindgen</code> and WebAssembly Interface Types is highly
+experimental, it's recommended that you expect breakage and/or surprises if
+you're using this.</p>
+</blockquote>
+<blockquote>
+<p><strong>Note</strong>: When building your crate with WebAssembly Interface Types enabled
+via <code>wasm-bindgen</code>, due to a bug in <code>wasm-bindgen</code>, it is currently necessary
+to build in release mode, i.e., <code>cargo wasi build --release</code>.</p>
+</blockquote>
+<p>The <a href="https://github.com/rustwasm/wasm-bindgen"><code>wasm-bindgen</code> project</a> is
+primarily targeted at JavaScript and the web, but is also becomimg the primary
+experiment grounds of WebAssembly Interface Types for Rust. If you're not using
+interface types you probably don't need <code>wasm-bindgen</code>, but if you're using
+interface types read on!</p>
+<p>The <code>cargo wasi</code> subcommand will automatically detect when
+<code>wasm-bindgen</code>-the-crate is used in your dependency graph. When this is seen
+then <code>cargo wasi</code> will download the corresponding precompiled <code>wasm-bindgen</code> CLI
+binary (or <code>cargo install</code> it) and execute that over the final WebAssembly file.</p>
+<p>Currently no configuration for <code>wasm-bindgen</code> is supported because the support
+for WebAssembly Interface Types is unconditionally enabled which takes no
+configuration. This aspect of <code>cargo wasi</code> is highly likely to change and get
+improved over time though!</p>
+<h1><a class="header" href="#testing-in-wasi" id="testing-in-wasi">Testing in WASI</a></h1>
+<p>Testing in WASI generall works the same as <a href="https://doc.rust-lang.org/book/ch11-01-writing-tests.html">testing in
+Rust</a>, but there's an
+important caveat about failing tests in WASI.</p>
+<p>The <code>wasm32-wasi</code> target for Rust is effectively a <code>panic=abort</code> target which
+has no support for unwinding. Most tests report failure, however by panicking!
+This means that a failing test will actually abort the whole wasi process, which
+isn't always a great experience.</p>
+<p>To compound the problems here Rust's test framework by default captures all
+output of a panic to print later after all tests have finished executing. If the
+process aborts on a panic though, nothing ends up getting printed! Instead
+you'll see something like:</p>
+<pre><code>$ cargo wasi test
+...
+     Running `/code/wasi-hello-world/target/wasm32-wasi/debug/deps/foo-38c031b0dc9ed5bc.wasm`
+
+running 1 test
+test foo ... error: failed to process main module `/code/wasi-hello-world/target/wasm32-wasi/debug/deps/foo-38c031b0dc9ed5bc.wasm`
+    caused by: Instantiation error: Trap occurred while invoking start function: wasm trap: unreachable, source location: @4143a
+</code></pre>
+<p>and that's not very helpful!</p>
+<p>To help with these issues it's recommended to use <code>--nocapture</code> which will at
+least print <em>some</em> information.</p>
+<pre><code>$ cargo wasi test -- --nocapture
+...
+     Running `/code/wasi-hello-world/target/wasm32-wasi/debug/deps/foo-38c031b0dc9ed5bc.wasm --nocapture`
+
+running 1 test
+test foo ... thread 'main' panicked at 'assertion failed: `(left == right)`
+  left: `1`,
+ right: `2`', tests/foo.rs:3:5
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace.
+error: failed to process main module `/code/wasi-hello-world/target/wasm32-wasi/debug/deps/foo-38c031b0dc9ed5bc.wasm`
+    caused by: Instantiation error: Trap occurred while invoking start function: wasm trap: unreachable, source location: @4143a
+</code></pre>
+<p>In general testing and wasi isn't great today. It's something we hope to improve
+over time!</p>
+<h1><a class="header" href="#updating-cargo-wasi" id="updating-cargo-wasi">Updating <code>cargo wasi</code></a></h1>
+<p>If you already have <code>cargo-wasi</code> installed and you'd like to update your
+installation, you can execute:</p>
+<pre><code>$ cargo install cargo-wasi --force
+</code></pre>
+<h1><a class="header" href="#uninstalling-cargo-wasi" id="uninstalling-cargo-wasi">Uninstalling <code>cargo wasi</code></a></h1>
+<p>If you'd like to remove <code>cargo-wasi</code> from your system, you'll want to first
+clear out the subcommand's caches and then remove the subcommand itself.</p>
+<pre><code>$ cargo wasi self clean
+$ cargo uninstall cargo-wasi
+</code></pre>
+<h1><a class="header" href="#contributing-to-cargo-wasi" id="contributing-to-cargo-wasi">Contributing to <code>cargo-wasi</code></a></h1>
+<p>This section contains instructions on how to get this project up and running for
+development. Source code for this project lives on GitHub at
+https://github.com/bytecodealliance/cargo-wasi.</p>
+<h2><a class="header" href="#prerequisites" id="prerequisites">Prerequisites</a></h2>
+<ol>
+<li>
+<p>The <code>cargo-wasi</code> subcommand is written in Rust, so you'll want <a href="https://www.rust-lang.org/tools/install">Rust
+installed</a></p>
+</li>
+<li>
+<p>Running tests requires <a href="https://wasmtime.dev"><code>wasmtime</code> is installed and in
+<code>$PATH</code></a> or an existing runtime provided via <code>CARGO_TARGET_WASM32_WASI_RUNNER</code>.</p>
+</li>
+</ol>
+<h2><a class="header" href="#getting-the-code" id="getting-the-code">Getting the code</a></h2>
+<p>You'll clone the code via <code>git</code>:</p>
+<pre><code>$ git clone https://github.com/bytecodealliance/cargo-wasi
+</code></pre>
+<h2><a class="header" href="#testing-changes" id="testing-changes">Testing changes</a></h2>
+<p>We'd like tests ideally to be written for all changes. Test can be run via:</p>
+<pre><code>$ cargo test
+</code></pre>
+<p>You'll be adding tests primarily to <code>tests/tests/*.rs</code>.</p>
+<h2><a class="header" href="#submitting-changes" id="submitting-changes">Submitting changes</a></h2>
+<p>Changes to <code>cargo-wasi</code> are managed through Pull Requests, and anyone is
+more than welcome to submit a pull request! We'll try to get to reviewing it or
+responding to it in at most a few days.</p>
+<h2><a class="header" href="#code-formatting" id="code-formatting">Code Formatting</a></h2>
+<p>Code is required to be formatted with the current Rust stable's <code>cargo fmt</code>
+command. This is checked on CI.</p>
+<h2><a class="header" href="#continuous-integration" id="continuous-integration">Continuous Integration</a></h2>
+<p>The CI for the <code>cargo-wasi</code> repository is relatively significant. It tests
+changes on Windows, macOS, and Linux. It also performs a &quot;dry run&quot; of the
+release process to ensure that release binaries can be built and are ready to be
+published.</p>
+<h2><a class="header" href="#publishing-a-new-version" id="publishing-a-new-version">Publishing a New Version</a></h2>
+<p>Publication of this crate is entirely automated via CI. A publish happens
+whenever a tag is pushed to the repository, so to publish a new version you'll
+want to make a PR that bumps the version numbers (see the <code>bump.rs</code> scripts in
+the root of the repository), merge the PR, then tag the PR and push the tag.
+That should trigger all that's necessary to publish all the crates and binaries
+to crates.io.</p>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                        
+
+                        
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                
+
+                
+            </nav>
+
+        </div>
+
+        
+
+        
+
+        
+
+        
+        <script src="elasticlunr.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="mark.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="searcher.js" type="text/javascript" charset="utf-8"></script>
+        
+
+        <script src="clipboard.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="highlight.js" type="text/javascript" charset="utf-8"></script>
+        <script src="book.js" type="text/javascript" charset="utf-8"></script>
+
+        <!-- Custom JS scripts -->
+        
+
+        
+        
+        <script type="text/javascript">
+        window.addEventListener('load', function() {
+            window.setTimeout(window.print, 100);
+        });
+        </script>
+        
+        
+
+    </body>
+</html>

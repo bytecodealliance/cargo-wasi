@@ -1,0 +1,301 @@
+<!DOCTYPE HTML>
+<html lang="en" class="sidebar-visible no-js">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Steps run by cargo-wasi - The cargo-wasi Subcommand</title>
+        
+
+        <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff" />
+
+        <link rel="shortcut icon" href="favicon.png">
+        <link rel="stylesheet" href="css/variables.css">
+        <link rel="stylesheet" href="css/general.css">
+        <link rel="stylesheet" href="css/chrome.css">
+        <link rel="stylesheet" href="css/print.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
+        <link href="https://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800" rel="stylesheet" type="text/css">
+        <link href="https://fonts.googleapis.com/css?family=Source+Code+Pro:500" rel="stylesheet" type="text/css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" href="highlight.css">
+        <link rel="stylesheet" href="tomorrow-night.css">
+        <link rel="stylesheet" href="ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+        
+
+        
+    </head>
+    <body class="light">
+        <!-- Provide site root to javascript -->
+        <script type="text/javascript">
+            var path_to_root = "";
+            var default_theme = "light";
+        </script>
+
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script type="text/javascript">
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script type="text/javascript">
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            document.body.className = theme;
+            document.querySelector('html').className = theme + ' js';
+        </script>
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script type="text/javascript">
+            var html = document.querySelector('html');
+            var sidebar = 'hidden';
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            }
+            html.classList.remove('sidebar-visible');
+            html.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <div class="sidebar-scrollbox">
+                <ol class="chapter"><li><a href="index.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li><ol class="section"><li><a href="install.html"><strong aria-hidden="true">1.1.</strong> Installation</a></li><li><a href="hello-world.html"><strong aria-hidden="true">1.2.</strong> Hello, World!</a></li></ol></li><li><a href="steps.html" class="active"><strong aria-hidden="true">2.</strong> Steps run by cargo-wasi</a></li><li><a href="reference.html"><strong aria-hidden="true">3.</strong> Reference</a></li><li><ol class="section"><li><a href="cli-usage.html"><strong aria-hidden="true">3.1.</strong> CLI Usage</a></li><li><a href="config.html"><strong aria-hidden="true">3.2.</strong> Configuration</a></li><li><a href="wasm-opt.html"><strong aria-hidden="true">3.3.</strong> Running wasm-opt</a></li><li><a href="wasm-bindgen.html"><strong aria-hidden="true">3.4.</strong> Running wasm-bindgen</a></li><li><a href="testing.html"><strong aria-hidden="true">3.5.</strong> Testing in WASI</a></li><li><a href="updating.html"><strong aria-hidden="true">3.6.</strong> Updating cargo wasi</a></li><li><a href="uninstalling.html"><strong aria-hidden="true">3.7.</strong> Uninstalling cargo wasi</a></li></ol></li><li><a href="contributing.html"><strong aria-hidden="true">4.</strong> Contributing</a></li></ol>
+            </div>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
+        </nav>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                
+                <div id="menu-bar" class="menu-bar">
+                    <div id="menu-bar-sticky-container">
+                        <div class="left-buttons">
+                            <button id="sidebar-toggle" class="icon-button" type="button" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                                <i class="fa fa-bars"></i>
+                            </button>
+                            <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                                <i class="fa fa-paint-brush"></i>
+                            </button>
+                            <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                                <li role="none"><button role="menuitem" class="theme" id="light">Light (default)</button></li>
+                                <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                                <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                                <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                                <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                            </ul>
+                            
+                            <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                                <i class="fa fa-search"></i>
+                            </button>
+                            
+                        </div>
+
+                        <h1 class="menu-title">The cargo-wasi Subcommand</h1>
+
+                        <div class="right-buttons">
+                            <a href="print.html" title="Print this book" aria-label="Print this book">
+                                <i id="print-button" class="fa fa-print"></i>
+                            </a>
+                            
+                        </div>
+                    </div>
+                </div>
+
+                
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" name="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+                
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script type="text/javascript">
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h1><a class="header" href="#steps-run-by-cargo-wasi" id="steps-run-by-cargo-wasi">Steps run by <code>cargo wasi</code></a></h1>
+<p>The <code>cargo wasi</code> subcommand is intended to be a <em>convenience</em> when developing
+Rust code for WASI, but is not required. It is a thin wrapper around the general
+&quot;toolchain&quot; of building WebAssembly code. Building WebAssembly code can be
+relatively involved and have a nontrivial number of moving parts, so having a
+convenience like <code>cargo wasi</code> becomes quite nice quite quickly, but it's
+important to also understand what <code>cargo wasi</code> is doing under the hood!</p>
+<p>This section will explain the various steps that <code>cargo wasi</code> internally takes
+care of for you. Be sure to check out the <a href="reference.html">reference
+documentation</a> for an exhaustive list of ways to run and configure
+<code>cargo wasi</code>.</p>
+<h2><a class="header" href="#managing-the-wasm32-wasi-target" id="managing-the-wasm32-wasi-target">Managing the <code>wasm32-wasi</code> target</a></h2>
+<p>The Rust installer does not install the <code>wasm32-wasi</code> Rust standard library by
+default, but to compile any code for <code>wasm32-wasi</code> you'll need to be sure to
+have this target installed for your Rust toolchain. The <code>cargo wasi</code> subcommand
+will automatically execute, if necessary:</p>
+<pre><code>rustup target add wasm32-wasi
+</code></pre>
+<p>For systems not using <code>rustup</code> it will generate an error indicating whether or
+not the <code>wasm32-wasi</code> target is installed.</p>
+<h2><a class="header" href="#ensuring-a-wasmtime-runtime-is-installed" id="ensuring-a-wasmtime-runtime-is-installed">Ensuring a <code>wasmtime</code> runtime is installed</a></h2>
+<p>As we saw previously when <a href="hello-world.html">running &quot;Hello, world!&quot;</a> a
+<code>wasmtime</code> executable is required to execute WASI code locally. The <code>cargo wasi</code>
+subcommand will verify that it is installed and provide an understandable error
+message if it isn't, also recommending how to <a href="https://wasmtime.dev">install
+<code>wasmtime</code></a>.</p>
+<h2><a class="header" href="#automatically-configure-cargo-for-wasm32-wasi" id="automatically-configure-cargo-for-wasm32-wasi">Automatically configure Cargo for <code>wasm32-wasi</code></a></h2>
+<p>Whenever <code>cargo wasi</code> is used it will automatically pass <code>--target wasm32-wasi</code>
+to all Cargo subcommands that are invoked. This avoids you having to type
+this all out on each command.</p>
+<h2><a class="header" href="#further-optimizing-webassembly-with-wasm-opt" id="further-optimizing-webassembly-with-wasm-opt">Further optimizing WebAssembly with <code>wasm-opt</code></a></h2>
+<p>The Rust compiler usese LLVM's WebAssembly backend to produce WebAssembly code.
+LLVM itself is an extremely good optimizing compiler, but LLVM's WebAssembly
+backend is unfortunately not quite as optimized as its other backends (such as
+X86). Standard practice today is to execute the <code>wasm-opt</code> tool (part of the
+<a href="https://github.com/webassembly/binaryen">binaryen project</a>) to further
+optimize a WebAssembly binary.</p>
+<p>For LLVM-optimized WebAssembly binaries <code>wasm-opt</code> normally doesn't get much of
+a runtime speed increase, but it can often reduce the size of a WebAssembly
+binary by 10-20%, which can be some serious savings!</p>
+<p>For more information about how <code>wasm-opt</code> is run see the <a href="wasm-opt.html">reference
+documentation</a></p>
+<h2><a class="header" href="#executing-wasm-bindgen-for-webassembly-interface-types" id="executing-wasm-bindgen-for-webassembly-interface-types">Executing <code>wasm-bindgen</code> for WebAssembly Interface Types</a></h2>
+<p>The <a href="https://github.com/webassembly/interface-types">WebAssembly Interface Types
+proposal</a> is a developing
+standard for enhancing the set of types that a WebAssembly module can work with
+at its boundaries (as opposed to just integers and floats). This developing
+standard is targeted at use cases primarily outside of a browser (but also in
+one!) which is a perfect fit for WASI.</p>
+<p>Rust's support for WebAssembly Interface Types comes through the
+<a href="https://github.com/rustwasm/wasm-bindgen"><code>wasm-bindgen</code> project</a>. When
+using <code>wasm-bindgen</code> as a crate, though, it requires also executing the
+matching CLI <code>wasm-bindgen</code> tool on the final WebAssembly binary. The
+<code>cargo wasi</code> subcommand will automatically find and install the matching binary
+to run on your WASI WebAssembly file. Using <code>cargo wasi</code> will also
+automatically configure <code>wasm-bindgen</code> to enable interface types support.</p>
+<h2><a class="header" href="#deleting-dwarf-debuginfo-in-release-mode" id="deleting-dwarf-debuginfo-in-release-mode">Deleting DWARF debuginfo in release mode</a></h2>
+<p>The standard Rust toolchain, following the convention of all platforms, ships
+an optimized standard library for the <code>wasm32-wasi</code> target that contains DWARF
+debug information. This is typically what you want in debug builds to have
+a better debugging experience for the standard library, but release builds of
+WebAssembly are often focused on size and disable debug information by default.
+Following standard practice for all targets the Rust toolchain will by default
+include the standard library's DWARF debug information in the final <code>*.wasm</code>
+file, but <code>cargo wasi</code> will strip it out.</p>
+<p>Note that this strip only happens if your build disables debuginfo in a release
+executable. If you enable debuginfo in the release executable, then <code>cargo wasi</code>
+will not strip out the dwarf debug information.</p>
+<h2><a class="header" href="#demangling-rust-symbols-in-the-name-section" id="demangling-rust-symbols-in-the-name-section">Demangling Rust symbols in the <code>name</code> section</a></h2>
+<p>WebAssembly's <a href="http://webassembly.github.io/spec/core/appendix/custom.html#name-section"><code>name</code> custom
+section</a>
+is present in debug and release builds of WebAssembly binaries, but Rust
+symbols, like all other platforms, are mangled! This means that instead of
+<code>main</code> you'll see <code>_ZN4main20h...</code>, very long symbol names.</p>
+<p>The <code>cargo wasi</code> toolchain will ensure that all Rust symbol names in the <code>name</code>
+section are demangled into a more human-readable form, improving the debugging
+experience when using native tooling.</p>
+<h2><a class="header" href="#configuration-for-the-name-and-producers-custom-sections" id="configuration-for-the-name-and-producers-custom-sections">Configuration for the <code>name</code> and <code>producers</code> Custom Sections</a></h2>
+<p>WebAssembly has a <a href="http://webassembly.github.io/spec/core/appendix/custom.html#name-section"><code>name</code> custom
+section</a>
+for providing debug names to functions/locals/etc which assist in debugging
+WebAssembly modules. Additionally a <a href="https://github.com/WebAssembly/tool-conventions/blob/master/ProducersSection.md"><code>producers</code> custom
+section</a>
+is typically used to collect metadata about tools used to produce a WebAssembly
+binary.</p>
+<p>These two sections are emitted by default into all <code>*.wasm</code> binaries (including
+release builds). Using <code>cargo wasi</code>, though, you can ensure they're
+deleted from release builds in your <code>Cargo.toml</code>:</p>
+<pre><code class="language-toml">[package.metadata]
+wasm-name-section = false
+wasm-producers-section = false
+</code></pre>
+<p>More information about configuration can be found <a href="config.html">in the reference</a></p>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                        
+                            <a rel="prev" href="hello-world.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+                        
+
+                        
+                            <a rel="next" href="reference.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
+                        
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                
+                    <a href="hello-world.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+                
+
+                
+                    <a href="reference.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
+                
+            </nav>
+
+        </div>
+
+        
+
+        
+
+        
+
+        
+        <script src="elasticlunr.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="mark.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="searcher.js" type="text/javascript" charset="utf-8"></script>
+        
+
+        <script src="clipboard.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="highlight.js" type="text/javascript" charset="utf-8"></script>
+        <script src="book.js" type="text/javascript" charset="utf-8"></script>
+
+        <!-- Custom JS scripts -->
+        
+
+        
+
+    </body>
+</html>

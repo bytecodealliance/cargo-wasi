@@ -1,0 +1,264 @@
+<!DOCTYPE HTML>
+<html lang="en" class="sidebar-visible no-js">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Configuration - The cargo-wasi Subcommand</title>
+        
+
+        <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff" />
+
+        <link rel="shortcut icon" href="favicon.png">
+        <link rel="stylesheet" href="css/variables.css">
+        <link rel="stylesheet" href="css/general.css">
+        <link rel="stylesheet" href="css/chrome.css">
+        <link rel="stylesheet" href="css/print.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
+        <link href="https://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800" rel="stylesheet" type="text/css">
+        <link href="https://fonts.googleapis.com/css?family=Source+Code+Pro:500" rel="stylesheet" type="text/css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" href="highlight.css">
+        <link rel="stylesheet" href="tomorrow-night.css">
+        <link rel="stylesheet" href="ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+        
+
+        
+    </head>
+    <body class="light">
+        <!-- Provide site root to javascript -->
+        <script type="text/javascript">
+            var path_to_root = "";
+            var default_theme = "light";
+        </script>
+
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script type="text/javascript">
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script type="text/javascript">
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            document.body.className = theme;
+            document.querySelector('html').className = theme + ' js';
+        </script>
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script type="text/javascript">
+            var html = document.querySelector('html');
+            var sidebar = 'hidden';
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            }
+            html.classList.remove('sidebar-visible');
+            html.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <div class="sidebar-scrollbox">
+                <ol class="chapter"><li><a href="index.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li><ol class="section"><li><a href="install.html"><strong aria-hidden="true">1.1.</strong> Installation</a></li><li><a href="hello-world.html"><strong aria-hidden="true">1.2.</strong> Hello, World!</a></li></ol></li><li><a href="steps.html"><strong aria-hidden="true">2.</strong> Steps run by cargo-wasi</a></li><li><a href="reference.html"><strong aria-hidden="true">3.</strong> Reference</a></li><li><ol class="section"><li><a href="cli-usage.html"><strong aria-hidden="true">3.1.</strong> CLI Usage</a></li><li><a href="config.html" class="active"><strong aria-hidden="true">3.2.</strong> Configuration</a></li><li><a href="wasm-opt.html"><strong aria-hidden="true">3.3.</strong> Running wasm-opt</a></li><li><a href="wasm-bindgen.html"><strong aria-hidden="true">3.4.</strong> Running wasm-bindgen</a></li><li><a href="testing.html"><strong aria-hidden="true">3.5.</strong> Testing in WASI</a></li><li><a href="updating.html"><strong aria-hidden="true">3.6.</strong> Updating cargo wasi</a></li><li><a href="uninstalling.html"><strong aria-hidden="true">3.7.</strong> Uninstalling cargo wasi</a></li></ol></li><li><a href="contributing.html"><strong aria-hidden="true">4.</strong> Contributing</a></li></ol>
+            </div>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
+        </nav>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                
+                <div id="menu-bar" class="menu-bar">
+                    <div id="menu-bar-sticky-container">
+                        <div class="left-buttons">
+                            <button id="sidebar-toggle" class="icon-button" type="button" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                                <i class="fa fa-bars"></i>
+                            </button>
+                            <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                                <i class="fa fa-paint-brush"></i>
+                            </button>
+                            <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                                <li role="none"><button role="menuitem" class="theme" id="light">Light (default)</button></li>
+                                <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                                <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                                <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                                <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                            </ul>
+                            
+                            <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                                <i class="fa fa-search"></i>
+                            </button>
+                            
+                        </div>
+
+                        <h1 class="menu-title">The cargo-wasi Subcommand</h1>
+
+                        <div class="right-buttons">
+                            <a href="print.html" title="Print this book" aria-label="Print this book">
+                                <i id="print-button" class="fa fa-print"></i>
+                            </a>
+                            
+                        </div>
+                    </div>
+                </div>
+
+                
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" name="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+                
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script type="text/javascript">
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h1><a class="header" href="#configuration" id="configuration">Configuration</a></h1>
+<p>The <code>cargo wasi</code> subcomand <a href="cli-usage.html">does not have any CLI flags of its
+own</a> but it's still not a one-size-fits-all command, so
+configuration needs to go somewhere! The <code>cargo wasi</code> command supports
+<a href="https://github.com/toml-lang/toml">TOML</a>-based configuration stored in your
+<a href="https://doc.rust-lang.org/book/ch14-03-cargo-workspaces.html">workspace</a>
+<code>Cargo.toml</code> in the <code>[package.metadata]</code> section:</p>
+<pre><code class="language-toml">[package.metadata]
+# ...
+</code></pre>
+<p>The keys supported by <code>cargo wasi</code> are:</p>
+<pre><code class="language-toml">[package.metadata]
+wasm-opt = true
+wasm-name-section = true
+wasm-producers-section = true
+</code></pre>
+<p>For more documentation about each key, see its section below.</p>
+<h2><a class="header" href="#wasm-opt" id="wasm-opt"><code>wasm-opt</code></a></h2>
+<p>This configuration option is a boolean value (<code>true</code> or <code>false</code>) which
+indicates whether the <code>wasm-opt</code> optimization tool from the <a href="https://github.com/webassembly/binaryen">binaryen
+toolkit</a> might be executed to further
+optimize the produced WebAssembly binaries. The default for this option is
+<code>true</code>.</p>
+<p>If this option is set to <code>false</code>, then <code>wasm-opt</code> will never be executed.</p>
+<p>If this option is set to <code>true</code>, this does not mean <code>wasm-opt</code> will
+unconditionally run for all builds. A value of <code>true</code> means that <code>wasm-opt</code>
+<em>may</em> run, depending on the internal heuristics of <code>cargo wasi</code>. For more
+information about these heuristics and caveats, see <a href="wasm-opt.html">the documentation about
+running <code>wasm-opt</code></a>.</p>
+<h2><a class="header" href="#wasm-name-section" id="wasm-name-section"><code>wasm-name-section</code></a></h2>
+<p>The <a href="http://webassembly.github.io/spec/core/appendix/custom.html#name-section"><code>name</code> custom
+section</a>
+records debugging information as names for wasm functions and variables. If you
+want reasonable stack traces or debug information it's recommended to have the
+<code>name</code> section present. Builds optimized for size though that have other
+channels of debugging may wish to disable this.</p>
+<p>This configuration option is a boolean value (<code>true</code> or <code>false</code>) which
+indicates whether the <code>name</code> section should be present or not. This option
+defaults to <code>true</code>.</p>
+<p>If this option is set to <code>false</code> then it only takes effect when a build is
+produced without debuginfo. For example a <code>cargo wasi build</code> binary which has
+debuginfo would still have the <code>name</code> section present. A <code>cargo wasi build --release</code> binary, however, would not have debuginfo and would also have the
+<code>name</code> section removed.</p>
+<h2><a class="header" href="#wasm-producers-section" id="wasm-producers-section"><code>wasm-producers-section</code></a></h2>
+<p>The <a href="https://github.com/WebAssembly/tool-conventions/blob/master/ProducersSection.md"><code>producers</code> custom
+section</a>
+records tools used to produce a WebAssembly module. This is meant for metric
+collection in production systems, and is generally harmless to include. Builds
+micro-optimized for size, however, may wish to exclude it.</p>
+<p>This configuration option is a boolean value (<code>true</code> or <code>false</code>) which
+indicates whether the <code>producers</code> section should be present or not. This option
+defaults to <code>true</code>.</p>
+<p>If this option is set to <code>false</code> then it only takes effect when a build is
+produced without debuginfo. For example a <code>cargo wasi build</code> binary which has
+debuginfo would still have the <code>producers</code> section present. A <code>cargo wasi build --release</code> binary, however, would not have debuginfo and would also have the
+<code>producers</code> section removed.</p>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                        
+                            <a rel="prev" href="cli-usage.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+                        
+
+                        
+                            <a rel="next" href="wasm-opt.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
+                        
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                
+                    <a href="cli-usage.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+                
+
+                
+                    <a href="wasm-opt.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
+                
+            </nav>
+
+        </div>
+
+        
+
+        
+
+        
+
+        
+        <script src="elasticlunr.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="mark.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="searcher.js" type="text/javascript" charset="utf-8"></script>
+        
+
+        <script src="clipboard.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="highlight.js" type="text/javascript" charset="utf-8"></script>
+        <script src="book.js" type="text/javascript" charset="utf-8"></script>
+
+        <!-- Custom JS scripts -->
+        
+
+        
+
+    </body>
+</html>
