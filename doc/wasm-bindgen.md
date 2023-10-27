@@ -9,8 +9,8 @@
 > to build in release mode, i.e., `cargo wasi build --release`.
 
 The [`wasm-bindgen` project](https://github.com/rustwasm/wasm-bindgen) is
-primarily targeted at JavaScript and the web, but is also becomimg the primary
-experiment grounds of WebAssembly Interface Types for Rust. If you're not using
+primarily targeted at JavaScript and the web, but is also becoming the primary
+experimentation grounds of WebAssembly Interface Types for Rust. If you're not using
 interface types you probably don't need `wasm-bindgen`, but if you're using
 interface types read on!
 
