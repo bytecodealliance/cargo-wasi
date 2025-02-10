@@ -1,3 +1,7 @@
+NOTE: This repo is obsolete; you probably want to use [`cargo component`](https://github.com/bytecodealliance/cargo-component) instead. See [this comment](https://github.com/bytecodealliance/cargo-wasi/issues/143#issue-1839621636) for details.
+
+---------
+
 <div align="center">
   <h1><code>cargo wasi</code></h1>
 
