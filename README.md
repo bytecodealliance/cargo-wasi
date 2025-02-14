@@ -1,4 +1,21 @@
-NOTE: This repo is obsolete; you probably want to use [`cargo component`](https://github.com/bytecodealliance/cargo-component) instead. See [this comment](https://github.com/bytecodealliance/cargo-wasi/issues/143#issue-1839621636) for details.
+# `cargo wasi` is deprecated, use [`cargo component`] instead
+
+This repository for the `cargo wasi` tool was created long before the Component
+Model of today in a time where the future of WASI was much less certain than it
+is now. Nowadays users looking to integrate Rust and WASI should use [`cargo
+component`] instead of `cargo wasi.
+
+The original assumptions of `cargo wasi`, such as being based on `wasm-bindgen`,
+are no longer applicable and the design direction of WASI has changed
+significantly relative to when this tool was started.
+
+See [this
+comment](https://github.com/bytecodealliance/cargo-wasi/issues/143#issue-1839621636)
+for a few more details. Otherwise feel free to reach out on [Zulip] with any
+questions.
+
+[`cargo component`]: https://github.com/bytecodealliance/cargo-component
+[Zulip]: https://bytecodealliance.zulipchat.com/
 
 ---------
 
